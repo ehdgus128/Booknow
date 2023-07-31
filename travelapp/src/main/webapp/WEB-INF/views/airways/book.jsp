@@ -12,7 +12,7 @@
 
 <%@include file="../include/flyheader.jsp" %>
 
-<!-- 230628 1446 동현 작성  -->
+<!-- 230628 1446 동현 작성 -->
 <div class="container-fluid position-relative">
 	<div class="page-header">
 		<div class="row">
