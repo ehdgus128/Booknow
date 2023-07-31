@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+
+<mapper namespace="com.booknow.travelapp.hotel.mapper.HtRoomsDetailMapper">
+ 	<!--  202307052154  - 객실 목록 조회 -->
+    <!-- 호텔 정보로 수정해야함 -> 수정 완 -->
+	<select id="selectHotelData" resultType="com.booknow.travelapp.hotel.domain.HotelVO">
+		SELECT htNo, htName, hTRank, htAreaCode, htType, 
+		htPhone, htEmail, busId, htStartdate, htEnddate, htAvailDate, htAddress
+		FROM tlbook.TBL_HOTELS 
+		WHERE htNo = #{htNo}
+	</select>   
+	
+  <!-- 2307091324 게시물 목록(페이징)  -->
+  <select id="selectRoomListPaging" resultType="com.booknow.travelapp.hotel.domain.HtRoomSellDateVO">
+  <![CDATA[
+    SELECT R.HTROONO, MIN(S.HTROOSELLPRICE) HTROOSELLPRICE, MIN(R.HTROOTYPE) HTROOTYPE, MIN(R.HTROONAME) HTROONAME
+    FROM tlbook.TBL_HT_ROOMS R
+    JOIN tlbook.TBL_HT_ROOM_SELL_DATE S
+    ON R.HTROONO = S.HTROONO
+    WHERE HTNO = #{htNo}
+    AND S.HTROOSELLDATE
+    BETWEEN TO_TIMESTAMP(#{htStartDateStr}, 'yyyy-MM-dd')
+    AND TO_TIMESTAMP(#{htEndDateStr}, 'yyyy-MM-dd')
+    AND S.HTRESNO IS NULL
+    GROUP BY R.HTROONO
+    HAVING (
+        CASE
+            WHEN COUNT(*) = ROUND(TO_DATE(#{htEndDateStr},'yyyy-MM-dd')-TO_DATE(#{htStartDateStr}, 'yyyy-MM-dd')+1)
+            THEN 'true'
+            ELSE 'false'
+        END
+    ) ='true'
+  ]]>
+  </select>
+
+  <select id="selectRoomTotal" resultType="java.lang.Integer">
+  <![CDATA[ 
+    SELECT COUNT(COUNT(*))
+    FROM tlbook.TBL_HT_ROOMS R
+    JOIN tlbook.TBL_HT_ROOM_SELL_DATE S
+    ON R.HTROONO = S.HTROONO
+    WHERE HTNO = #{htNo}
+    AND S.HTROOSELLDATE
+    BETWEEN TO_TIMESTAMP(#{htStartDateStr}, 'yyyy-MM-dd')
+    AND TO_TIMESTAMP(#{htEndDateStr}, 'yyyy-MM-dd')
+    AND S.HTRESNO IS NULL
+    GROUP BY R.HTROONO
+    HAVING (
+        CASE
+            WHEN COUNT(*) = ROUND(TO_DATE(#{htEndDateStr},'yyyy-MM-dd')-TO_DATE(#{htStartDateStr}, 'yyyy-MM-dd')+1)
+            THEN 'true'
+            ELSE 'false'
+        END
+    ) ='true'
+  ]]>
+	</select>
+		
+</mapper>

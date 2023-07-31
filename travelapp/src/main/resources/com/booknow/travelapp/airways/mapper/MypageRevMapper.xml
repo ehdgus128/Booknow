@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   <mapper namespace="com.booknow.travelapp.airways.mypage.mapper.MypageRevMapper">
+  
+  <!--20230708세연 생성  마이페이지 에서 나의 리뷰내역 -->
+
+	 
+   <select id="selectMyAirRev" 
+    resultType="com.booknow.travelapp.airways.domain.AirLineRevVO">
+	      
+<!--           <![CDATA[  
+		        SELECT     airlineRevno,   userId,  airlineId,  airlineStar,  airlineLike,
+            airlineRevTitle,  airlineRevContents,   airlineRevRegDate,  airlineRevDelFlag
+      		FROM
+                  ( SELECT /*+ INDEX_DESC (a IDX_USERID_REGDATE_AIRLINEREV) */  rownum rn, a.* 
+                  FROM  tlbook.TBL_AIRLINE_REV a
+                  WHERE   ]]>
+             <trim prefix="(" suffix=")AND" prefixOverrides="OR">
+                  	<foreach item='scope' collection="mypagePagingDTO.scopeArray">
+                  			<trim prefix="OR">
+                  				<choose>
+						  <when test="scope == 'T'.toString()">airlineRevTitle LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'C'.toString()">airlineRevContents LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'W'.toString()">airlineId LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+                  				</choose>
+                  			</trim> 
+                  		</foreach>
+                  </trim>           
+	<![CDATA[ 	
+			   	rownum <= ( #{mypagePagingDTO.mypagePageNum} * #{mypagePagingDTO.mypagePerPage}) AND userId = #{userId}    )
+				WHERE rn >= (  (  #{mypagePagingDTO.mypagePageNum} * #{mypagePagingDTO.mypagePerPage}  ) - (#{mypagePagingDTO.mypagePerPage} - 1)  )
+		]]> 
+		
+	 </select> -->
+	 
+	 
+	 <![CDATA[  
+		        SELECT     airlineRevno,   userId,  airlineId,  airlineStar,  airlineLike,
+            airlineRevTitle,  airlineRevContents,   airlineRevRegDate,  airlineRevDelFlag, airlineNm
+      		FROM
+                  ( SELECT /*+ INDEX_DESC (a IDX_USERID_REGDATE_AIRLINEREV) */  rownum rn, a.* , b.airLineNm
+                  FROM  tlbook.TBL_AIRLINE_REV a LEFT JOIN tbl_airline b ON (a.airlineId = b.airlineId)
+                  WHERE   ]]>
+             <trim prefix="(" suffix=")AND" prefixOverrides="OR">
+                  	<foreach item='scope' collection="mypagePagingDTO.scopeArray">
+                  			<trim prefix="OR">
+                  				<choose>
+						  <when test="scope == 'T'.toString()">airlineRevTitle LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'C'.toString()">airlineRevContents LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'W'.toString()">airlineNm LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+                  				</choose>
+                  			</trim> 
+                  		</foreach>
+                  </trim>           
+	<![CDATA[ 	
+			   	rownum <= ( #{mypagePagingDTO.mypagePageNum} * #{mypagePagingDTO.mypagePerPage}) AND userId = #{userId}  ORDER BY 8 DESC  )
+				WHERE rn >= (  (  #{mypagePagingDTO.mypagePageNum} * #{mypagePagingDTO.mypagePerPage}  ) - (#{mypagePagingDTO.mypagePerPage} - 1)  )
+				ORDER BY 8 DESC 
+		]]> 
+		
+	 </select>
+	 
+	 
+	 
+	 <!-- mypageRowTotal -->
+ 	<!--  <select id="selectMyAirRevRowtotal" resultType="long">
+ 	 	SELECT COUNT(*) AS mypageRowTotal FROM tlbook.TBL_AIRLINE_REV
+ 	 	WHERE userId = #{userId}
+ 	 	  <trim prefix="AND (" suffix=")" prefixOverrides="OR">
+            <foreach item='scope' collection='mypagePagingDTO.scopeArray'>
+                <trim prefix="OR">
+                    <choose>
+                         <when test="scope == 'T'.toString()">airlineRevTitle LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'C'.toString()">airlineRevContents LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'W'.toString()">airlineId LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+                    </choose>
+                </trim>
+            </foreach>
+        </trim>  
+ 	  
+ 	 </select> -->
+ 	 
+ 	 
+ 	 
+ 	  <select id="selectMyAirRevRowtotal" resultType="long">
+ 	 	SELECT COUNT(*) AS mypageRowTotal FROM tlbook.TBL_AIRLINE_REV a LEFT JOIN tbl_airline b ON (a.airlineId = b.airlineId)
+ 	 	WHERE userId = #{userId}
+ 	 	  <trim prefix="AND (" suffix=")" prefixOverrides="OR">
+            <foreach item='scope' collection='mypagePagingDTO.scopeArray'>
+                <trim prefix="OR">
+                    <choose>
+                         <when test="scope == 'T'.toString()">airlineRevTitle LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'C'.toString()">airlineRevContents LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'W'.toString()">airlineNm LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+                    </choose>
+                </trim>
+            </foreach>
+        </trim>  
+ 	  
+ 	 </select>
+ 	 
+ 	 
+  <select id="notNullAirRev" resultType="long"
+                            >
+       SELECT   COUNT(*)
+                FROM  TBL_AIR_RESERVATIONS
+               WHERE userId= #{userId}
+  </select> 
+	 
+ 
+ 	  
+ 	  
+ 	 <!-- 호텔 시작 --> 
+ 	 
+   <select id="selectMyHTRev" 
+    resultType="com.booknow.travelapp.airways.mypage.domain.MypageHotelVO">
+	      
+          <![CDATA[  
+		        SELECT  htRevNo,   userId,  htRevStar,  htRevLike, 
+            htRevContents, htRevRegDate,  htRevDelFlag, htNo
+      		FROM
+                  ( SELECT /*+ INDEX_DESC (a IDX_USERID_HTREVREGDATE_HT_REVIEWS) */  rownum rn, a.* 
+                  FROM  tlbook.HT_REVIEWS a
+                  WHERE   ]]>
+             <trim prefix="(" suffix=")AND" prefixOverrides="OR">
+                  	<foreach item='scope' collection="mypagePagingDTO.scopeArray">
+                  			<trim prefix="OR">
+                  				<choose>
+						  <when test="scope == 'T'.toString()">htRevNo LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'C'.toString()">htRevContents LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'W'.toString()">htNo LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+                  				</choose>
+                  			</trim> 
+                  		</foreach>
+                  </trim>           
+	<![CDATA[ 	
+			   	rownum <= ( #{mypagePagingDTO.mypagePageNum} * #{mypagePagingDTO.mypagePerPage}) AND userId = #{userId}  ORDER BY 6 DESC  )
+				WHERE rn >= (  (  #{mypagePagingDTO.mypagePageNum} * #{mypagePagingDTO.mypagePerPage}  ) - (#{mypagePagingDTO.mypagePerPage} - 1)  )
+				
+		]]> 
+		
+	 </select>
+	 
+	 
+	<!-- mypageRowTotal -->
+ 	 <select id="selectMyHTRevRowtotal" resultType="long">
+ 	 	SELECT COUNT(*) AS mypageRowTotal FROM  tlbook.HT_REVIEWS
+ 	 	WHERE userId = #{userId}
+ 	 	  <trim prefix="AND (" suffix=")" prefixOverrides="OR">
+            <foreach item='scope' collection='mypagePagingDTO.scopeArray'>
+                <trim prefix="OR">
+                    <choose>
+                        <when test="scope == 'T'.toString()">htRevNo LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'C'.toString()">htRevContents LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+		                <when test="scope == 'W'.toString()">htNo LIKE '%'||#{mypagePagingDTO.keyword}||'%'</when>
+                    </choose>
+                </trim>
+            </foreach>
+        </trim>  
+ 	  
+ 	 </select>  
+ 	 
+ 	  <select id="notNullHTRev" resultType="long"
+                            >
+       SELECT   COUNT(*)
+                FROM  HT_REVIEWS
+               WHERE userId= #{userId}
+  </select> 
+	 
+ 
+ 	 
+ 
+ 
+ 	 </mapper>
+ 

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+  <!-- 230703 심세연 생성 -->
+ <mapper namespace="com.booknow.travelapp.airways.mapper.MypageMapper">
+ 
+  <resultMap id="tlAuthorityMap" type="com.booknow.travelapp.common.domain.TLAuthoritys">
+    <result property="userId" column="USERID"/>
+    <result property="authority" column="AUTHORITY"/>
+    <result property="grantedDate" column="GRANTEDDATE"/>
+  </resultMap>
+  
+  <resultMap id="tlMemberMap" type="com.booknow.travelapp.common.domain.TLUsers">
+    <result property="userId" column="USERID"/>
+    <result property="userPassword" column="USERPASSWORD"/>
+    <result property="userName" column="USERNAME"/>
+    <result property="userEmail" column="USEREMAIL"/>
+    <result property="userAddress" column="USERADDRESS"/>
+    <result property="userMileage" column="USERMILEAGE"/>
+    <result property="userBday" column="USERBDAY"/>
+    <result property="userPhoneNumber" column="USERPHONENUMBER"/>
+    <result property="userRegDate" column="USERREGDATE"/>
+    <result property="userModDate" column="USERMODDATE"/>
+    <result property="userStorage" column="USERSTORAGE"/>
+    <result property="enabled" column="ENABLED"/>
+    <collection property="authorityList" resultMap="tlAuthorityMap"/>
+  </resultMap>
+
+  <select id="selectUser" resultMap="tlMemberMap">
+	SELECT U.USERID, U.USERNAME, U.USERPASSWORD, U.USEREMAIL, U.USERADDRESS, U.USERMILEAGE, 
+	U.USERBDAY, U.USERPHONENUMBER, U.USERREGDATE, U.USERMODDATE, U.USERSTORAGE, U.ENABLED,
+	A.AUTHORITY, A.GRANTEDDATE
+	FROM tlbook.TBL_USERS U
+	INNER JOIN tlbook.TBL_USER_AUTHORITYS A
+	ON U.USERID = A.USERID
+	WHERE U.USERID = #{userId}
+  </select>
+  
+  
+ 
+  <select id="selectUserPassword"> <!--20230704 세연 만듬  -->
+  	SELECT USERPASSWORD 
+	FROM tlbook.TBL_USERS  
+	WHERE USERID = #{userId} 
+  
+  </select>
+  
+    <update id="updateUserPassword"> <!--20230704 세연 만듬  -->
+    	UPDATE tlbook.tbl_users
+ 		SET userPassword = #{userPassword}
+ 		WHERE userId = #{userId}
+  	</update>
+  
+ 
+  	<update id="udateUserEmail"> <!--20230704 세연 만듬  -->
+    	UPDATE tlbook.tbl_users
+ 		SET userEmail= #{userEmail}
+ 		WHERE userId = #{userId}
+  	</update> 
+ 
+ 	<update id="udateUserAddress">  
+    	UPDATE tlbook.tbl_users
+ 		SET userAddress= #{userAddress}
+ 		WHERE userId = #{userId}
+  	</update> 
+  	
+  	<update id="udateUserPhoneNumber">  
+    	UPDATE tlbook.tbl_users
+ 		SET userPhoneNumber= #{userPhoneNumber}
+ 		WHERE userId = #{userId}
+  	</update> 
+  	
+ 
+	
+ 
+ 
+ 
+ 
+ 
+ 	<!-- <selct id="selectBestHotel">
+        SELECT 
+        htrevno,htrevstar,htrevlike,htrevtitle,htrevcontents,htrevregdate,htno,userId
+        FROM ht_reviews
+        WHERE userId = #{userId} 
+ 	</selct> -->
+ 
+ 
+ 
+ </mapper>

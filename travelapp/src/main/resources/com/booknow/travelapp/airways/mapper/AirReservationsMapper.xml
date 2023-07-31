@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 230628 1250 동현 수정 -->
+<mapper namespace="com.booknow.travelapp.airways.mapper.AirReservationsMapper">
+
+	<!-- 고객이 선택한 항공편 정보 조회 -->
+	<select id="selectChoicedFlight" resultType="com.booknow.travelapp.airways.domain.AirReservationsVO">
+		SELECT a.airlineNm, b.vihicleId, b.depairportNm, 
+			   b.arrAirportNm, b.depPlandTime, b.arrPlandTime
+		FROM tlbook.tbl_airline a
+		INNER JOIN tlbook.tbl_air_Route b
+		ON a.airlineId = b.airlineId
+		WHERE b.airRouteno = #{airRouteno}
+	</select>
+	
+	<!-- 예약자 정보 조회 -->
+	<select id="selectUserInfo" resultType="com.booknow.travelapp.common.domain.TLUsers">
+		SELECT userName, userEmail, userPhoneNumber, userBday
+		FROM tlbook.tbl_users
+		WHERE userId = #{userId}
+	</select>
+	
+	<!-- 최종 예약정보 확인 (결제페이지) -->
+	<select id="selectFinalReservation" resultType="com.booknow.travelapp.airways.domain.AirReservationsVO">
+		SELECT a.airlineNm, b.vihicleId, b.depairportNm, 
+			   b.arrAirportNm, b.depPlandTime, b.arrPlandTime, b.economyCharge, b.prestigeCharge
+		FROM tlbook.tbl_airline a
+		INNER JOIN tlbook.tbl_air_Route b
+		ON a.airlineId = b.airlineId
+		WHERE b.airRouteno = #{airRouteno}
+	</select>
+	
+	<!-- 판매번호 생성 -->
+	<insert id="insertSellInfo" parameterType="com.booknow.travelapp.airways.domain.AirRouteSellVO">
+		INSERT INTO tlbook.tbl_air_Route_Sell
+		VALUES(TLBOOK.SEQ_AIR_ROUTE_SELL.nextval, #{userId}, null, DEFAULT, #{sellUuid}, #{totalPrice})
+	</insert>
+	
+	<!-- 예약번호 생성 -->
+	<insert id="insertResInfo" parameterType="com.booknow.travelapp.airways.domain.AirReservationsVO">
+		<selectKey order="BEFORE" keyProperty="airResno" resultType="Long">
+			select TLBOOK.SEQ_AIR_RES.nextval
+			from dual	
+		</selectKey>
+		INSERT INTO tlbook.tbl_air_Reservations
+		VALUES(#{airResno}, #{airRouteno}, (
+		       SELECT airlineId
+		       FROM tbl_air_Route
+		       WHERE airRouteno = #{airRouteno} ),
+				null, #{airClass}, #{userId}, #{totalPrice})
+	</insert>
+	
+	<!-- 탑승객 정보 입력 -->
+	<insert id="insertPassengerInfo" parameterType="com.booknow.travelapp.airways.domain.AirPassengersVO">
+		<selectKey order="BEFORE" keyProperty="airPasno" resultType="Long">
+			select TLBOOK.SEQ_AIR_PAS.nextval
+			from dual	
+		</selectKey>
+	
+		INSERT INTO tlbook.tbl_air_passengers
+		VALUES(#{airPasno}, #{airResno}, #{airPasName}, #{airPasGender}, #{airPasBDate}, #{airPasNation}, #{airDisCntRate})
+	</insert>
+
+</mapper>
+

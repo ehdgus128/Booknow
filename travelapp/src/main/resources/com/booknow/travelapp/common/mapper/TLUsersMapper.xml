@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.booknow.travelapp.common.mapper.TLUsersMapper">
+
+  <resultMap id="tlAuthorityMap" type="com.booknow.travelapp.common.domain.TLAuthoritys">
+    <result property="userId" column="USERID"/>
+    <result property="authority" column="AUTHORITY"/>
+    <result property="grantedDate" column="GRANTEDDATE"/>
+  </resultMap>
+  
+  <resultMap id="tlMemberMap" type="com.booknow.travelapp.common.domain.TLUsers">
+    <result property="userId" column="USERID"/>
+    <result property="userPassword" column="USERPASSWORD"/>
+    <result property="userName" column="USERNAME"/>
+    <result property="userEmail" column="USEREMAIL"/>
+    <result property="userAddress" column="USERADDRESS"/>
+    <result property="userMileage" column="USERMILEAGE"/>
+    <result property="userBday" column="USERBDAY"/>
+    <result property="userPhoneNumber" column="USERPHONENUMBER"/>
+    <result property="userRegDate" column="USERREGDATE"/>
+    <result property="userModDate" column="USERMODDATE"/>
+    <result property="userStorage" column="USERSTORAGE"/>
+    <result property="enabled" column="ENABLED"/>
+    <collection property="authorityList" resultMap="tlAuthorityMap"/>
+  </resultMap>
+
+  <select id="selectTLUser" resultMap="tlMemberMap">
+	SELECT U.USERID, U.USERNAME, U.USERPASSWORD, U.USEREMAIL, U.USERADDRESS, U.USERMILEAGE, 
+	U.USERBDAY, U.USERPHONENUMBER, U.USERREGDATE, U.USERMODDATE, U.USERSTORAGE, U.ENABLED,
+	U.NAVERID, A.AUTHORITY, A.GRANTEDDATE
+	FROM tlbook.TBL_USERS U
+	INNER JOIN tlbook.TBL_USER_AUTHORITYS A
+	ON U.USERID = A.USERID
+	WHERE U.USERID = #{userId}
+  </select>
+  
+  
+  <select id="selectTLUserSnsLoggedIn" resultMap="tlMemberMap">
+	SELECT U.USERID, U.USERNAME, U.USERPASSWORD, U.USEREMAIL, U.USERADDRESS, U.USERMILEAGE, 
+	U.USERBDAY, U.USERPHONENUMBER, U.USERREGDATE, U.USERMODDATE, U.USERSTORAGE, U.ENABLED,
+	U.NAVERID, A.AUTHORITY, A.GRANTEDDATE
+	FROM tlbook.TBL_USERS U
+	INNER JOIN tlbook.TBL_USER_AUTHORITYS A
+	ON U.USERID = A.USERID
+	WHERE 
+			U.NAVERID = #{naverId}
+			
+  </select>
+  
+  
+  <select id="selectTLUserOUTER" resultMap="tlMemberMap">
+	SELECT U.USERID, U.USERNAME, U.USERPASSWORD, U.USEREMAIL, U.USERADDRESS, U.USERMILEAGE, 
+	U.USERBDAY, U.USERPHONENUMBER, U.USERREGDATE, U.USERMODDATE, U.USERSTORAGE, U.ENABLED,
+	U.NAVERID, A.AUTHORITY, A.GRANTEDDATE
+	FROM tlbook.TBL_USERS U
+	LEFT OUTER JOIN tlbook.TBL_USER_AUTHORITYS A
+	ON U.USERID = A.USERID
+	WHERE U.USERID = #{userId}
+  </select>
+  
+  
+
+  <!-- 230706 임지혁: ID 중복 검사 -->
+  <select id="selectDupId" resultType="String">
+		SELECT count(*) as count
+		FROM tlbook.tbl_users
+		WHERE userId = #{userId}
+  </select>
+
+
+  <insert id="insertTLUser">
+	INSERT INTO tlbook.TBL_USERS
+	VALUES(#{userId}, #{userName}, #{userPassword}, #{userEmail}, #{userAddress}, #{userMileage}, 
+	#{userBday}, #{userPhoneNumber}, DEFAULT, DEFAULT, DEFAULT, DEFAULT, #{naverId})
+  </insert>
+
+
+  <insert id="insertTLAuthoritys">
+	INSERT INTO tlbook.TBL_USER_AUTHORITYS
+	VALUES(#{userId}, #{authority}, DEFAULT)
+  </insert>
+  
+  
+  <!-- 230711 임지혁: 비밀번호 변경 -->
+  <update id="updateTLUserPw">
+  	UPDATE tlbook.tbl_users
+	SET userPassword = #{userPassword},
+	    userModDate = systimeStamp(0)
+	WHERE userId = #{userId}
+  </update>
+  
+  
+	<!-- 230712 임지혁: 아이디 찾기 -->
+	<select id="selectTLUserId" resultType="String">
+		SELECT userId FROM tlbook.tbl_users
+		WHERE userName = #{userName} AND userEmail = #{userEmail}
+	</select>
+  
+
+	
+</mapper>

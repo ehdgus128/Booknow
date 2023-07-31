@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <!-- 230627 임지혁 생성 -->
+  <mapper namespace="com.booknow.travelapp.airways.mapper.AirRouteMapper">
+  <!-- 230627 임지혁: CRUD 생성 -->
+  	
+	<!-- 230701 임지혁: 표시된 노선 총 개수 -->
+	<select id="selectRowTotal" resultType="long">
+		<![CDATA[
+			SELECT COUNT(*) rowTotal FROM tlbook.tbl_air_route
+			WHERE
+		]]>
+		<trim prefix="(" suffix=") AND" prefixOverrides="AND|OR">
+			<foreach item="airline" collection="airlineIdArr">
+				<trim prefix="OR">
+					<![CDATA[
+						airlineId LIKE #{airline}
+					]]>
+				</trim>
+			</foreach>
+		</trim>
+		<choose>
+			<when test="seatFlag eq 'both'.toString()" >
+				<![CDATA[
+					(ESEATCNT >= #{total} OR PSEATCNT >= #{total})
+				]]>	
+			</when>
+			<when test="seatFlag eq 'economy'.toString()">
+				<![CDATA[
+					(ESEATCNT >= #{total})
+				]]>	
+			</when>
+			<when test="seatFlag eq 'prestige'.toString()">
+				<![CDATA[
+					(PSEATCNT >= #{total})
+				]]>
+			</when>
+		</choose>
+			
+		<![CDATA[
+			AND
+				DEPAIRPORTNM LIKE '%'||#{depAirportNmStr}||'%' 
+	  		AND 
+	  			ARRAIRPORTNM LIKE '%'||#{arrAirportNmStr}||'%'
+	  		AND  
+  				DEPPLANDTIME 
+	  			BETWEEN TO_DATE(CONCAT(#{depPlandTimeStr}, #{depMin}), 'YYYY-MM-DDHH24') 
+	  		AND 
+	  					TO_DATE(CONCAT(#{depPlandTimeStr}, #{depMax}), 'YYYY-MM-DDHH24') 
+			    
+		]]>
+	</select>
+	
+	<!-- TRUNC(ROUND((arrPlandTime - depPlandTime) * 24, 0), 60) hh,
+	MOD(ROUND((arrPlandTime - depPlandTime) * 24 * 60, 2), 60) mm, -->
+	
+	<!-- 230701 임지혁: 노선리스트, ajax, paging -->
+  	<select id="selectAirRouteSearchList" 
+  			resultType="com.booknow.travelapp.airways.domain.AirRouteVO">
+		
+		<![CDATA[	
+			SELECT rn, AIRROUTENO, AIRLINEID,
+				   DEPAIRPORTNM, ARRAIRPORTNM, 
+			       depPlandTime, arrPlandTime, 
+			       
+	       			(
+	       			(CASE WHEN TRUNC(ROUND((arrPlandTime - depPlandTime) * 24, 0), 60) > 9 THEN '' ELSE '0' END) || 
+	       					   TRUNC(ROUND((arrPlandTime - depPlandTime) * 24, 0), 60)
+	       			) hh,
+	       
+	       			(
+	       			(CASE WHEN MOD(ROUND((arrPlandTime - depPlandTime) * 24 * 60, 2), 60) > 9 THEN '' ELSE '0' END) || 
+	       					   MOD(ROUND((arrPlandTime - depPlandTime) * 24 * 60, 2), 60)
+	       			) mm,
+			       
+			       ECONOMYCHARGE, PRESTIGECHARGE, ESEATCNT, PSEATCNT, VIHICLEID, BUYFLAG
+			FROM 
+		]]>
+		<choose>
+			<when test="seatFlag eq 'prestige'.toString()">
+				<choose>
+					<when test="sortFlag eq 'earlier'.toString()">					
+						<![CDATA[  
+							(SELECT /*+ INDEX_ASC(a IDX_depplandTime_air_route) */
+						]]>  
+					</when>	  
+					<when test="sortFlag eq 'cheaper'.toString()">					
+						<![CDATA[
+							(SELECT /*+ INDEX_ASC(a IDX_prestigeCharge_depPlandTime_air_route) */
+						]]>  
+					</when>	  
+				</choose>		
+				<![CDATA[
+					rownum rn, a.*
+					FROM tlbook.tbl_air_route a
+					WHERE
+					  
+						(PSEATCNT >= #{total})
+				]]>
+			
+			</when>
+			
+			<otherwise>
+				<choose>
+					<when test="sortFlag eq 'earlier'.toString()">					
+						<![CDATA[  
+							(SELECT /*+ INDEX_ASC(a IDX_depplandTime_air_route) */
+						]]>  
+					</when>	  
+					<otherwise>					
+						<![CDATA[
+							(SELECT /*+ INDEX_ASC(a IDX_economyCharge_depPlandTime_air_route) */
+						]]>  
+					</otherwise>	  
+				</choose>		
+					<![CDATA[
+						rownum rn, a.*
+					    FROM tlbook.tbl_air_route a
+						WHERE
+					]]>	
+				<choose>
+					<when test="seatFlag eq 'both'.toString()" >
+						<![CDATA[
+							(ESEATCNT >= #{total} OR PSEATCNT >= #{total})
+						]]>	
+					</when>
+					<when test="seatFlag eq 'economy'.toString()">
+						<![CDATA[
+							(ESEATCNT >= #{total})
+						]]>	
+					</when>
+				</choose>	
+			</otherwise>
+		</choose>
+
+		<trim prefix="AND (" suffix=")" prefixOverrides="AND|OR">
+			<foreach item="airline" collection="airlineIdArr">
+				<trim prefix="OR">
+					<![CDATA[
+						airlineId LIKE #{airline}
+					]]>
+				</trim>
+			</foreach>
+		</trim>
+
+		<![CDATA[
+			AND
+				DEPAIRPORTNM LIKE '%'||#{depAirportNmStr}||'%' 
+	  		AND 
+	  			ARRAIRPORTNM LIKE '%'||#{arrAirportNmStr}||'%'
+	  		AND  
+  				DEPPLANDTIME 
+	  			BETWEEN TO_DATE(CONCAT(#{depPlandTimeStr}, #{depMin}), 'YYYY-MM-DDHH24') 
+	  		AND 
+	  					TO_DATE(CONCAT(#{depPlandTimeStr}, #{depMax}), 'YYYY-MM-DDHH24') 
+		    
+			AND
+				rownum <= (#{pageNum} * #{numOfRows}))
+			WHERE rn >= ((#{pageNum} * #{numOfRows}) - (#{numOfRows} - 1))
+		]]>
+	</select>
+
+ 	<!-- 20230628 임지혁: 항공노선정보 DB에 insert -->
+ 	<update id="insertAirRoute" parameterType="java.util.Map">
+		<foreach collection="list" item="item" index="index" separator=" " 
+			 	 open="INSERT ALL" close="SELECT * FROM DUAL">
+		<![CDATA[
+ 			INTO tlbook.tbl_air_route
+ 				(	
+ 					airRouteno,
+ 					airlineId,
+ 					depAirportNm,
+ 					arrAirportNm,
+ 					depPlandTime,
+ 					arrPlandTime,
+ 					economyCharge,
+ 					prestigeCharge,
+ 					vihicleId
+ 				)
+ 			VALUES
+				(	
+					get_seq_air_route(),
+					#{item.airlineId},
+					#{item.depAirportNm},
+					#{item.arrAirportNm},
+					TO_DATE(#{item.depPlandTime}, 'YYYYMMDDHH24MI'),
+					TO_DATE(#{item.arrPlandTime}, 'YYYYMMDDHH24MI'),
+					#{item.economyCharge},
+					#{item.prestigeCharge},
+					#{item.vihicleId}
+				)	
+		]]>	
+			</foreach>
+ 	</update>
+ 	
+    
+ 	<!-- 노선 좌석 수 업데이트 -->
+  	<update id="updateAirRouteSeatCnt">
+		UPDATE tlbook.tbl_air_route
+		SET seatCnt = 25
+		WHERE airRouteno = 1
+  	</update>
+    
+    <!-- 노선 삭제 -->
+  	<delete id="deleteAirRoute">
+	  	DELETE FROM tlbook.tbl_air_route
+	  	WHERE airRouteno = #{airRouteno}
+  	</delete>
+  	
+  	  	<!-- 편도 항공노선 SELECT --> <!-- 0629 박효준  TO_DATE(#{depPlandTime}) => TO_CHAR(#{depPlandTime})로 변경 -->
+  	<select id="AirRouteSelect" resultType="com.booknow.travelapp.airways.domain.AirRouteVO" >
+	  	<![CDATA[
+	  	SELECT airRouteno, airLineId, TO_CHAR(depPlandTime, 'YYYYMMDDHH24miss') AS depPlandTime, TO_CHAR(arrPlandTime, 'YYYYMMDDHH24miss') AS, depPlandTime, 
+	  		   arrPlandTime, economyCharge, vihicleId, eseatCnt, pseatCnt, buyFlag
+		FROM tbl_air_route
+		WHERE depAirportNm = #{depAirportNm} AND arrAirportNm= #{arrAirportNm} AND
+			  depPlandTime <= TO_CHAR(#{depPlandTime})
+  		]]>
+  	</select>
+
+	<!-- 230717 김영환 항공사 평점 랭킹 top 5 -->
+	<select id="selectAirGradeRankList" resultType="com.booknow.travelapp.airways.domain.AirRankVO">
+	<![CDATA[ 
+		SELECT AIRLINEID, AIRLINENM, ROUND(avgstar ,1) AS airAvgGrade, rank
+		FROM (
+			SELECT A.AIRLINEID, A.AIRLINENM, R.avgstar, 
+			RANK() OVER (ORDER BY R.avgstar DESC, A.AIRLINEID ASC) rank
+			FROM tlbook.TBL_AIRLINE A
+			JOIN (
+				SELECT AIRLINEID, AVG(
+					CASE 
+						WHEN AIRLINESTAR IS NULL THEN 0
+						ELSE AIRLINESTAR
+					END
+				) AS avgstar
+				FROM tlbook.TBL_AIRLINE_REV
+				GROUP BY AIRLINEID
+			) R
+			ON A.AIRLINEID = R.AIRLINEID
+			WHERE R.avgstar IS NOT NULL 
+			ORDER BY 3 DESC NULLS LAST
+		)
+		WHERE rank <= 5	
+	]]>
+	</select>
+	<!-- 0719박효준 최저가 항공편 -->
+	<select id="selectAirLowPrice" resultType="com.booknow.travelapp.airways.domain.AirRouteVO">
+	<![CDATA[ 
+		SELECT airlineNm,depAirportNm, arrAirportNm, depPlandTime,
+		       arrPlandTime, economyCharge
+		FROM tbl_air_route a INNER JOIN tbl_airline b ON a.airLineid = b.airLineid
+		WHERE economyCharge = (SELECT MIN(economyCharge)
+		                          FROM tbl_air_route
+		                          WHERE economyCharge > 0 AND depPlandTime > TO_CHAR(SYSDATE, 'yyyy-MM-dd')
+		                       )  AND ROWNUM <= 8
+		order by DBMS_RANDOM.RANDOM
+	]]>
+	</select>
+  
+  </mapper>

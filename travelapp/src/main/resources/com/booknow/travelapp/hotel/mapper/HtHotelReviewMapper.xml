@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="com.booknow.travelapp.hotel.mapper.HtHotelReviewMapper">
+
+	<!--  특정 호텔의 모든리뷰 -->
+	<select id="selectTotalReviewList" resultType="com.booknow.travelapp.hotel.domain.HtReviewVO">
+		SELECT HTREVNO, HTREVSTAR, HTREVLIKE, 
+		HTREVCONTENTS, HTREVREGDATE, HTREVDELFLAG, HTNO, USERID
+		FROM tlbook.HT_REVIEWS
+		WHERE HTNO = #{htNo}
+		ORDER by 1 DESC
+	</select>
+	
+  	<!-- 총갯수(페이징처리)  -->
+  	<select id="selectReviewTotalCnt" resultType="int">
+  		SELECT count(*) from TLBOOK.ht_reviews
+  		WHERE htNo = #{htNo}
+  	</select>
+  
+ 	 <!-- 리뷰등록페이지 -->
+	<insert id="insertMyReview">
+		INSERT INTO tlbook.HT_REVIEWS
+		VALUES(
+			tlbook.SEQ_HT_REVIEWS.NEXTVAL,
+			#{htRevStar},
+			0,
+			#{htRevContents},
+			DEFAULT,
+			0,
+			#{htNo},
+			#{userId}
+		)
+  	</insert>
+
+	<!-- 수정 -->
+	<update id="updateModifyReivew">
+		UPDATE tlbook.HT_REVIEWS
+		SET HTREVSTAR = #{htRevStar},
+		HTREVCONTENTS = #{htRevContents},
+		HTREVREGDATE = SYSDATE
+		WHERE HTREVNO = #{htRevNo}
+	</update>
+
+	<!-- 삭제 요청 -->
+	<update id="updateModifyDelFlagReivew">
+		UPDATE tlbook.HT_REVIEWS
+		SET HTREVDELFLAG = 1
+		WHERE HTREVNO = #{htRevNo}
+	</update>
+
+	<!-- 삭제 -->
+	<delete id="deleteHtReivew">
+		DELETE FROM tlbook.HT_REVIEWS
+		WHERE HTREVNO = #{htRevNo}
+	</delete>
+
+</mapper>
+<!-- 2306280312김가현_댓글목록조회페이지구현완료 -->

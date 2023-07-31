@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ 	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 작업자 정지은 호텔사진등록 2307131245 -->
+<mapper namespace="com.booknow.travelapp.common.mapper.TLHotelAttachFileMapper">
+
+<!-- 호텔파트 -->
+	<!-- 첨부파일 추가 -->
+	<insert id="insertAttachFile" 
+			parameterType="com.booknow.travelapp.common.domain.TLHotelAttachFilesVO">
+		INSERT INTO tlbook.tbl_ht_attachFiles
+			 VALUES (#{htuuid},#{htUploadPath},#{htFileName},'I',#{htNo})
+	</insert>
+	
+	<!-- 특정호텔의 첨부파일조회 -->
+	<select id="selectAttachFilesByHtNo" 
+			resultType="com.booknow.travelapp.common.domain.TLHotelAttachFilesVO">
+		SELECT htuuid,htUploadPath,htFileName,htFileType,htNo 
+		  FROM tlbook.tbl_ht_attachFiles
+		 WHERE htNo = #{htNo}
+		AND ROWNUM =1
+	</select>
+	
+	
+	<!-- 특정 uuid의 파일삭제 -->
+	<delete id="deleteAttachFile">
+		DELETE FROM tlbook.tbl_ht_attachFiles WHERE htuuid = #{htuuid}
+	</delete>
+
+<!-- 방파트 -->	
+
+	<!-- 특정 호텔의 방 전체조회 sql (페이징처리 X)--> 
+	<select id="selectRoomListForSelect"
+			resultType="com.booknow.travelapp.common.domain.TLHotelRoomVO">
+		SELECT htRooNo,htRooType,htRooPrice,htNo,htRooName
+		FROM tlbook.tbl_ht_rooms 
+		WHERE htNo = #{htNo}
+		ORDER BY htRooNo desc
+	</select>
+	
+	<!-- 첨부파일 추가 -->
+	<insert id="insertRmAttachFile"
+			parameterType="com.booknow.travelapp.common.domain.TLRoomAttachFilesVO">
+		INSERT INTO tlbook.tbl_ht_room_attachfiles
+			 VALUES (#{rmUuid},#{rmUploadPath},#{rmFileName},'I',#{htRooNo})
+	</insert>
+	
+	<!-- 특정 방의 사진 조회  -->
+	<select id="selectRmAttachFilesByHtRooNo"
+			resultType="com.booknow.travelapp.common.domain.TLRoomAttachFilesVO">
+		SELECT rmUuid,rmUploadPath,rmFileName,rmFileType,htRooNo 
+		  FROM tlbook.tbl_ht_room_attachfiles
+		 WHERE htRooNo = #{htRooNo}
+		 AND ROWNUM =1
+	</select>
+
+	<!-- 특정 객실 uuid의 파일삭제 -->
+	<delete id="deleteRmAttachFile">
+		DELETE FROM tlbook.tbl_ht_room_attachfiles WHERE rmUuid = #{rmUuid}
+	</delete>
+
+
+</mapper>

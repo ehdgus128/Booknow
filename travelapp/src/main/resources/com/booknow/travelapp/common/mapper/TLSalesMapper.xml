@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<!-- 230705 0022 동현 작성 -->
+<mapper namespace="com.booknow.travelapp.common.mapper.TLSalesMapper">
+
+	<!-- 항공 월별매출 조회 --><!-- 
+	<select id="selectAirMonthlySales" resultType="map">
+		SELECT A.MONTH , (A.sellmoney - B.buymoney) monthlySales
+		FROM (
+		    SELECT SUM(R.TOTALPRICE) AS sellmoney, TO_CHAR(S.AIRSELLDATE, 'yyyy/MM') MONTH
+		    FROM tlbook.TBL_AIR_ROUTE_SELL S
+		    JOIN tlbook.TBL_AIR_RESERVATIONS R
+		    ON S.AIRSELLNO = R.AIRSELLNO
+		    GROUP BY TO_CHAR(S.AIRSELLDATE, 'yyyy/MM')
+		    HAVING TO_CHAR(S.AIRSELLDATE, 'yyyy/MM') LIKE #{selectedYear}||'%'
+		) A JOIN (
+		    SELECT SUM(AIRROUTEBUYPRICE) buymoney , TO_CHAR(AIRBUYDATE, 'yyyy/MM') MONTH
+		    FROM tlbook.TBL_AIR_ROUTE_BUY
+		    GROUP BY TO_CHAR(AIRBUYDATE, 'yyyy/MM')
+		    HAVING TO_CHAR(AIRBUYDATE, 'yyyy/MM') LIKE #{selectedYear}||'%'
+		) B
+		ON A.MONTH = B.MONTH
+		ORDER BY A.MONTH
+	</select> -->
+	
+	<!-- 호텔 월별매출 조회 --><!-- 
+	<select id="selectHtMonthlySales" resultType="map">
+		SELECT A.MONTH , (A.sellmoney - B.buymoney) monthlySales
+		FROM (
+		    SELECT SUM(HTSELLPRICE) AS sellmoney, TO_CHAR(HTSELLTRANDATE, 'yyyy/MM') MONTH
+		    FROM tlbook.TBL_HT_SELL_TRANSACTIONS
+		    GROUP BY TO_CHAR(HTSELLTRANDATE, 'yyyy/MM')
+		    HAVING TO_CHAR(HTSELLTRANDATE, 'yyyy/MM') LIKE #{selectedYear}||'%'
+		) A JOIN (
+		    SELECT SUM(HTBUYCOST) buymoney , TO_CHAR(HTBUYTRANDATE, 'yyyy/MM') MONTH
+		    FROM tlbook.TBL_HT_BUY_TRANSACTIONS
+		    GROUP BY TO_CHAR(HTBUYTRANDATE, 'yyyy/MM')
+		    HAVING TO_CHAR(HTBUYTRANDATE, 'yyyy/MM') LIKE #{selectedYear}||'%'
+		) B
+		ON A.MONTH = B.MONTH
+		ORDER BY A.MONTH
+	</select> -->
+	
+	<!-- 항공 월별매출 조회('판매완료' 상태만 조회) -->
+	<select id="selectAirMonthlySales" resultType="map">
+		SELECT A.MONTH, (A.sellmoney - B.buymoney) AS monthlySales
+		FROM (
+		    SELECT SUM(TOTALPRICE) AS sellmoney, TO_CHAR(AIRSELLDATE, 'yyyy/MM') AS MONTH
+		    FROM tlbook.TBL_AIR_ROUTE_SELL
+		    WHERE TO_CHAR(AIRSELLDATE, 'yyyy/MM') LIKE #{selectedYear}||'%' AND airSellStatus = '판매완료'
+		    GROUP BY TO_CHAR(AIRSELLDATE, 'yyyy/MM')
+		) A
+		JOIN (
+		    SELECT SUM(AIRROUTEBUYPRICE) AS buymoney, TO_CHAR(AIRBUYDATE, 'yyyy/MM') AS MONTH
+		    FROM tlbook.TBL_AIR_ROUTE_BUY
+		    WHERE TO_CHAR(AIRBUYDATE, 'yyyy/MM') LIKE #{selectedYear}||'%'
+		    GROUP BY TO_CHAR(AIRBUYDATE, 'yyyy/MM')
+		) B 
+		ON A.MONTH = B.MONTH
+		ORDER BY A.MONTH
+	</select>
+	
+	<!-- 호텔 월별매출 조회('판매완료' 상태만 조회) -->
+	<select id="selectHtMonthlySales" resultType="map">
+		SELECT A.MONTH , (A.sellmoney - B.buymoney) monthlySales
+		FROM (
+		    SELECT SUM(HTSELLPRICE) AS sellmoney, TO_CHAR(HTSELLTRANDATE, 'yyyy/MM') MONTH
+		    FROM tlbook.TBL_HT_SELL_TRANSACTIONS
+		    WHERE TO_CHAR(HTSELLTRANDATE, 'yyyy/MM') LIKE #{selectedYear}||'%' AND HTSELLSTATUS = '판매완료'
+		    GROUP BY TO_CHAR(HTSELLTRANDATE, 'yyyy/MM')
+		) A JOIN (
+		    SELECT SUM(HTBUYCOST) buymoney , TO_CHAR(HTBUYTRANDATE, 'yyyy/MM') MONTH
+		    FROM tlbook.TBL_HT_BUY_TRANSACTIONS
+		    WHERE TO_CHAR(HTBUYTRANDATE, 'yyyy/MM') LIKE #{selectedYear}||'%'
+		    GROUP BY TO_CHAR(HTBUYTRANDATE, 'yyyy/MM')
+		) B
+		ON A.MONTH = B.MONTH
+		ORDER BY A.MONTH
+	</select>
+	
+	
+</mapper>

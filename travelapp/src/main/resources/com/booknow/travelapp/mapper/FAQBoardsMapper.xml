@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.booknow.travelapp.mapper.FAQBoardsMapper">
+
+<!-- 0627_창훈 작성 -->
+
+<!-- FAQ게시글 목록조회
+		 <select id="selectFaqBoardList" resultType="com.booknow.travelapp.domain.FaqBoardsVO">
+		 SELECT * FROM TLBOOK.TBL_FAQ_BOARDS 
+		 WHERE faqno > 0 
+		 ORDER BY faqno DESC 
+		 </select>-->
+		 
+<!-- 0703_창훈 작성 -->		 
+<!--  FAQ게시글 목록조회_ 페이징 고려 -->
+	<select id="selectFaqBoardList" resultType="com.booknow.travelapp.domain.FaqBoardsVO">
+		 <![CDATA[
+		 SELECT faqNo, faqQuestion, faqAnswer, cateId, faqLike
+		 FROM ( SELECT /*+ INDEX_DESC (a pk_myboard) */ ROWNUM rn, a.*
+		 		FROM (SELECT faqNo, faqQuestion, faqAnswer, cateId, faqLike
+	                  FROM TLBOOK.TBL_FAQ_BOARDS
+	                  ORDER BY faqLike DESC) a
+				 WHERE ROWNUM <= ( #{pageNum} * #{rowAmountPerPage} )
+			   )
+		 WHERE rn >= ( ( #{pageNum} * #{rowAmountPerPage} ) - ( #{rowAmountPerPage} - 1 ) )
+		 ]]>
+		 ORDER BY faqlike DESC
+		 
+	 </select> 
+	 
+	   <!--<select id="selectFaqBoardList" resultType="com.booknow.travelapp.domain.FaqBoardsVO">
+		 <![CDATA[
+		 SELECT faqNo, faqQuestion, faqAnswer, cateId, faqLike
+		 FROM ( SELECT ROW_NUMBER() over(ORDER BY faqLike DESC)  rn, a.*
+		 		FROM TLBOOK.TBL_FAQ_BOARDS a
+				 WHERE ROWNUM <= ( #{pageNum} * #{rowAmountPerPage} )
+				
+			   )
+		 WHERE rn >= ( ( #{pageNum} * #{rowAmountPerPage} ) - ( #{rowAmountPerPage} - 1 ) )]]>
+		 
+	 </select>-->
+	 
+	 <!-- 게시물 총 개수 조회_페이징 -->
+	 <select id="selectRowAmountTotal" resultType="Long">
+	 <![CDATA[
+	 SELECT count(*) totalCnt FROM TLBOOK.TBL_FAQ_BOARDS
+	 WHERE faqno > 0
+	  
+	 ]]>
+	 </select>
+	 
+	
+	<!-- FAQ 게시물 등록(관리자) - selectKey 이용 -->
+	 <insert id="insertFaqBoardSelectKey">
+		 <selectKey keyProperty="faqno" order="BEFORE" resultType="long">
+		 SELECT TLBOOK.SEQ_FAQ_BOARDS.nextval FROM dual
+		 </selectKey>
+	
+		 INSERT INTO TLBOOK.TBL_FAQ_BOARDS
+		VALUES (#{faqNo}, #{faqQuestion}, #{faqAnswer},#{cateId},DEFAULT)
+	 </insert>
+	 
+	<!-- FAQ 카테고리 게시물 조회 -->
+	<select id="selectFaqBoard" resultType="com.booknow.travelapp.domain.FaqBoardsVO">
+		select faqNo,faqQuestion,faqAnswer,cateId,faqLike
+		from tlbook.tbl_faq_boards
+		where FAQNO = #{faqNo}
+	 </select>
+	
+	 <!-- FAQ 게시물 삭제(관리자) -->
+	<delete id="deleteFaqboards" parameterType="long">
+			DELETE FROM TLBOOK.TBL_FAQ_BOARDS 
+			WHERE faqNo=#{faqNo}
+	</delete>
+	 
+	 
+	<!--  FAQ 게시물 수정(관리자) -->
+	 <update id="updateFaqboards">
+		UPDATE TLBOOK.TBL_FAQ_BOARDS 
+		SET faqQuestion = #{faqQuestion},
+			 faqAnswer = #{faqAnswer}
+		WHERE faqNo = #{faqNo}
+	 </update>
+	
+	<!-- FAQ 게시물 조회수 증가 -->
+	 <update id="FaqLikeCnt">
+		 UPDATE TLBOOK.TBL_FAQ_BOARDS
+		 SET faqLike = faqLike + 1
+		 WHERE faqNo = #{faqNo}
+	 </update>
+
+
+</mapper>

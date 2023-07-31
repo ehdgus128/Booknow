@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+  <!-- 230626 심세연 생성 -->
+ <mapper namespace="com.booknow.travelapp.airways.mapper.AirResDetailMapper">
+  
+      <!-- 검색 기능 위해 0710 오늘 수정--> 
+      <select id="selectAirReservations" resultType="com.booknow.travelapp.airways.domain.AirResDetailVO">
+         <![CDATA[   
+      SELECT airResno, airRouteno, airLineId, airSellno, airClass, userId , depAirportNm, arrAirportNm, depPlandTime, arrPlandTime,airSellStatus
+      FROM (
+          SELECT /*+ INDEX_DESC(PK_AIRRESNO_AIRRESERVATIONS)*/ ROWNUM rn, a.*
+          FROM (
+              SELECT distinct c.airResno, c.airRouteno, c.airLineId, c.airSellno, c.airClass, c.userId,  b.depAirportNm, b.arrAirportNm, b.depPlandTime, b.arrPlandTime, d.airSellStatus,  ROWNUM
+              FROM tlbook.tbl_air_route_sell d JOIN 
+              tlbook.tbl_air_reservations c ON(d.airSellno = c.airSellno ) JOIN TBL_AIR_ROUTE b ON(c.AIRROUTENO = b.airRouteno)
+              WHERE c.userId = #{userId}  AND d.airSellStatus IS NOT NULL AND b.depPlandTime>=  TO_DATE(#{airResDetailPagingDTO.depPlandTime,jdbcType=VARCHAR},'yyyy-MM-dd') AND b.arrPlandTime <= ( TO_DATE(#{airResDetailPagingDTO.arrPlandTime,jdbcType=VARCHAR},'yyyy-MM-dd') + INTERVAL '1' DAY )
+              ORDER BY c.airResno DESC
+          ) a
+          WHERE ROWNUM <= ( #{airResDetailPagingDTO.airResPageNum} * #{airResDetailPagingDTO.airResPerPage} )]]>
+                <trim prefix="AND(" suffix=")" prefixOverrides="OR">
+                   <foreach item='scope' collection="airResDetailPagingDTO.scopeArray">
+                      <trim prefix="OR">
+                                 <choose>
+                       <when test="scope == 'T'.toString()">airResno LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                         <when test="scope == 'C'.toString()">depAirportNm LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                         <when test="scope == 'W'.toString()">arrAirportNm LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                                 </choose>
+                              </trim> 
+                   </foreach>
+             </trim>
+       
+             <![CDATA[           
+          
+      )
+      WHERE rn >=  ( ( #{airResDetailPagingDTO.airResPageNum} * #{airResDetailPagingDTO.airResPerPage}) - ( #{airResDetailPagingDTO.airResPerPage} - 1)) ]]>
+      </select> 
+      
+      
+     <!--   <select id="selectAirReservations" resultType="com.booknow.travelapp.airways.domain.AirReservationsVO">
+         <![CDATA[   
+      SELECT airResno, airRouteno, airLineId, airSellno, airClass, userId , depAirportNm, arrAirportNm, depPlandTime, arrPlandTime, airSellStatus
+      FROM (
+          SELECT /*+ INDEX_DESC(PK_AIRRESNO_AIRRESERVATIONS)*/ ROWNUM rn, a.airResno, a.airRouteno, a.airLineId, a.airSellno, a.airClass, a.userId, a.depAirportNm, a.arrAirportNm, a.depPlandTime, a.arrPlandTime, a.airSellStatus
+          FROM (
+              SELECT DISTINCT c.airResno, c.airRouteno, c.airLineId, c.airSellno, c.airClass, c.userId,  b.depAirportNm, b.arrAirportNm, b.depPlandTime, b.arrPlandTime, d.airSellStatus,  ROWNUM
+                   FROM  tlbook.tbl_air_route_sell d LEFT JOIN tlbook.tbl_air_reservations c ON  (d.userId = c.userId)
+        		    LEFT  JOIN  tlbook.TBL_AIR_ROUTE b  ON(c.AIRROUTENO = b.airRouteno)
+              WHERE c.userId = #{userId} AND d.airSellStatus  IS NOT NULL AND b.depPlandTime >=  TO_DATE( #{airResDetailPagingDTO.depPlandTime,jdbcType=VARCHAR},'yyyy-MM-dd') AND b.arrPlandTime <=( TO_DATE(#{airResDetailPagingDTO.arrPlandTime,jdbcType=VARCHAR},'yyyy-MM-dd') + INTERVAL '1' DAY )
+              ORDER BY c.airResno DESC
+          ) a
+          WHERE ROWNUM <= ( #{airResDetailPagingDTO.airResPageNum} * #{airResDetailPagingDTO.airResPerPage} )]]>
+                <trim prefix="AND(" suffix=")" prefixOverrides="OR">
+                   <foreach item='scope' collection="airResDetailPagingDTO.scopeArray">
+                      <trim prefix="OR">
+                                 <choose>
+                       <when test="scope == 'T'.toString()">airResno LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                         <when test="scope == 'C'.toString()">depAirportNm LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                         <when test="scope == 'W'.toString()">arrAirportNm LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                                 </choose>
+                              </trim> 
+                   </foreach>
+             </trim>
+       
+             <![CDATA[           
+          
+      )
+      WHERE rn >=  ( ( #{airResDetailPagingDTO.airResPageNum} * #{airResDetailPagingDTO.airResPerPage}) - ( #{airResDetailPagingDTO.airResPerPage} - 1)) ]]>
+      </select> -->
+      
+      
+      
+      
+      
+      
+      
+       
+    <!-- + 페이징 관련2 -->
+    <!--// 5 rowTotal 수 -->
+    <!-- <select id = "selectAirResRowTotal" resultType="long">
+       SELECT  COUNT(*) airResRowTotal
+       FROM TBL_AIR_RESERVATIONS
+       WHERE userId = #{userId}
+    
+    
+    </select> -->
+    
+    
+    <select id = "selectAirResRowTotal" resultType="long">
+          <![CDATA[   
+      SELECT COUNT(*)
+      FROM (
+          SELECT /*+ INDEX_DESC(PK_AIRRESNO_AIRRESERVATIONS)*/ ROWNUM rn, a.*
+          FROM (
+              SELECT c.airResno, c.airRouteno, c.airLineId, c.airSellno, c.airClass, c.userId,  b.depAirportNm, b.arrAirportNm, b.depPlandTime, b.arrPlandTime,d.airSellStatus,  ROWNUM
+              FROM tlbook.tbl_air_route_sell d JOIN 
+              tlbook.tbl_air_reservations c ON(d.airSellno = c.airSellno ) JOIN TBL_AIR_ROUTE b ON(c.AIRROUTENO = b.airRouteno)
+              WHERE c.userId = #{userId}  AND d.airSellStatus IS NOT NULL AND b.depPlandTime>=  TO_DATE(#{airResDetailPagingDTO.depPlandTime,jdbcType=VARCHAR},'yyyy-MM-dd') AND b.arrPlandTime <= ( TO_DATE(#{airResDetailPagingDTO.arrPlandTime,jdbcType=VARCHAR},'yyyy-MM-dd') + INTERVAL '1' DAY )
+          ) a
+        ]]>
+               <where><trim prefix="(" suffix=")" prefixOverrides="OR">
+                   <foreach item='scope' collection="airResDetailPagingDTO.scopeArray">
+                      <trim prefix="OR">
+                                 <choose>
+                       <when test="scope == 'T'.toString()">airLineId LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                         <when test="scope == 'C'.toString()">depAirportNm LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                         <when test="scope == 'W'.toString()">arrAirportNm LIKE '%'||#{airResDetailPagingDTO.keyword}||'%'</when>
+                                 </choose>
+                              </trim> 
+                   </foreach>
+             </trim>
+        </where>
+      )
+       
+       </select>
+ 
+
+
+
+ 
+    
+ <!--  3개조인 
+   <select id="selectAirResDetail" resultType="com.booknow.travelapp.airways.domain.AirResDetailVO">
+   SELECT   a.airResno, a.airRouteno, a.airlineId, a.airSellno, a.airClass, 
+            b.airPasno, b.airPasName,b.airPasGender, b.airPasBdate, b.airPasNation, b.airDiscntRate,
+            c.optWheelFlag, c.optPetFlag, c.optRugFlag
+         FROM TBL_AIR_RESERVATIONS a
+         JOIN TBL_AIR_PASSENGERS b ON (a.airResno = b.airResno)
+         JOIN TBL_AIR_RESERVATION_OPTION c ON (b.airResno = c.airResno) 
+         WHERE a.airResno = #{airResno}
+  </select>  -->
+  
+  <!-- //0 4개조인 예약번호에 따라 상세내역/ 테스트 ok --><!-- air_reservation_option 테이블 삭제로 인해 수정_0717동현 -->
+   <select id="selectAirResDetail" resultType="com.booknow.travelapp.airways.domain.AirResDetailVO"
+                              parameterType="long">
+	SELECT e.airRouteno, e.depAirportNm, e.arrAirportNm, e.depPlandTime, e.arrPlandTime, 
+		 e.economyCharge,e.prestigeCharge, e.vihicleId,
+		    a.airResno, a.airRouteno, a.airlineId, a.airSellno, a.airClass, a.userId, a.totalprice,
+		    b.airPasno, b.airPasName,b.airPasGender, b.airPasBdate, b.airPasNation, b.airDiscntRate , d.airSellno, d.airSellStatus
+	FROM TBL_AIR_ROUTE e JOIN TBL_AIR_RESERVATIONS a ON(e.AIRROUTENO = a.airRouteno)
+						 JOIN TBL_AIR_PASSENGERS b ON (a.airResno = b.airResno) 
+						 JOIN TBL_AIR_ROUTE_SELL d ON (a.airSellno = d.airSellno) 
+	WHERE a.airResno = #{airResno}
+  </select>  
+  
+  <!-- //1 예약번호 +노선에 따른 테이블 4개 select  --><!-- air_reservation_option 테이블 삭제로 인해 수정_0717동현 -->
+   <select id="selectAirResDetailPerRoute" resultType="com.booknow.travelapp.airways.domain.AirResDetailVO"
+                              parameterType="long">
+		SELECT e.airRouteno, e.depAirportNm, e.arrAirportNm, e.depPlandTime, e.arrPlandTime, 
+		        e.economyCharge,e.prestigeCharge, e.vihicleId,
+		        a.airResno, a.airRouteno, a.airlineId, a.airSellno, a.airClass, a.userId, 
+		        b.airPasno, b.airPasName,b.airPasGender, b.airPasBdate, b.airPasNation, b.airDiscntRate
+		FROM TBL_AIR_ROUTE e JOIN TBL_AIR_RESERVATIONS a 
+		    ON(e.AIRROUTENO = a.airRouteno)
+		    LEFT JOIN TBL_AIR_PASSENGERS b 
+		    ON a.airResno = b.airResno 
+		WHERE a.airResno = #{airResno} AND e.airRouteno = #{airRouteno}
+  </select>
+  
+  <!--//2 예약 1건당 나오는 AirRouteVO -->
+<!--  <select id="selectAirResPerRoute" resultType="com.booknow.travelapp.airways.domain.AirRouteVO">
+    SELECT  e.airRouteno, e.depAirportNm, e.arrAirportNm,TO_CHAR(e.depPlandTime, 'yymmdd    HH:mm:ss') as depPlandTime, TO_CHAR(e.arrPlandTime, 'yymmdd   HH:mm:ss') as arrPlandTime ,  
+         e.economyCharge,e.prestigeCharge, e.vihicleId, e.seatCnt, e.airModel FROM TBL_AIR_ROUTE e LEFT JOIN 
+         TBL_AIR_RESERVATIONS a ON(e.AIRROUTENO = a.airRouteno)  
+    WHERE a.airResno = #{airResno}  
+ 
+ </select>
+  -->
+  
+   <select id="selectAirResPerRoute" resultType="com.booknow.travelapp.airways.domain.AirRouteVO">
+    SELECT  e.airRouteno, e.depAirportNm, e.arrAirportNm,e.depPlandTime, e.arrPlandTime,  
+         e.economyCharge,e.prestigeCharge, e.vihicleId<!--,   e.seatCnt, --><!--  e.airModel --> FROM TBL_AIR_ROUTE e LEFT JOIN 
+         TBL_AIR_RESERVATIONS a ON(e.AIRROUTENO = a.airRouteno)  
+    WHERE a.airResno = #{airResno}  
+ 
+ </select>
+
+  
+  <!--//3 예약번호에 따라 구매한 좌석의 수(승객 수) -->
+<select id="selectAirResPerSeat" resultType="long"
+                              parameterType="long">
+    SELECT   COUNT(*)
+             FROM  TBL_AIR_RESERVATIONS
+            WHERE airResno = #{airResno} AND airRouteno = #{airRouteno}
+  </select> 
+   
+  
+    
+  
+<!-- 예약 userID로 예약1건당 노선 뽑아내기  -->  
+   
+ 
+  
+  <!--6 예약번호와 아이디에 따른 총예약인원 수 --> 
+
+    <select id = "selectAirResPeopleCnt" resultType="long">
+       SELECT  COUNT(*) 
+       FROM TBL_AIR_PASSENGERS
+       WHERE airResno = #{airResno} 
+    
+    </select>
+    
+   <!--7 예약번호에 따른 총 예약 가격 --> 
+     <select id="selectTotalprice"  resultType="long"
+                              parameterType="long">
+         SELECT totalPrice
+        FROM tbl_air_reservations 
+        WHERE airResno = #{airResno}            
+  
+     </select>
+     
+     <!-- id당 예약한 수  -->
+     <select id="notNullRes" resultType="long"
+                            >
+       SELECT   COUNT(*)
+                FROM  TBL_AIR_RESERVATIONS
+               WHERE userId= #{userId}
+  </select> 
+  
+  
+  
+  <!--한건의 uuId 구하기 20230712 추가   -->
+  <select id="selectUUID" resultType="String">
+  SELECT b.selluuId
+        FROM tbl_air_reservations  a LEFT JOIN tbl_air_route_sell b ON (a.airsellno = b.airsellno)
+        WHERE  a.userId = #{userId} AND a.airResno = #{airResno} 
+  </select>
+  
+ 
+   <!-- uuId List 구하기  20230712 추가   --> 
+ <!--   <select id="selectUUID2" resultType="long">
+  SELECT b.selluuId, a.airresno, a.userId 
+        FROM tbl_air_reservations  a LEFT JOIN tbl_air_route_sell b ON (a.airsellno = b.airsellno)
+        WHERE  a.userId = #{userId} 
+  </select> -->
+  
+  </mapper>
+   
+   

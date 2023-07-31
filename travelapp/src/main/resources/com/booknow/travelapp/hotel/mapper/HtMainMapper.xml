@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+  <!-- 작업자 : 김영환 일시: 2307031319 -->
+<mapper namespace="com.booknow.travelapp.hotel.mapper.HtMainMapper">
+
+  <!-- 작업자 : 김영환 일시: 2307031319 -->
+  <!-- 호텔 평점 top5 -->
+  <select id="selectHotelGradeRankList" resultType="com.booknow.travelapp.hotel.domain.HtHotelRankVO">
+  <![CDATA[ 
+    SELECT HTNO, HTNAME, HTRANK, ROUND(avgstar ,1) AS htAvgGrade, rank
+    FROM (
+        SELECT H.HTNO, H.HTNAME, H.HTRANK, R.avgstar, 
+        RANK() OVER (ORDER BY R.avgstar DESC, H.HTNO ASC) rank
+        FROM tlbook.TBL_HOTELS H
+        JOIN (
+            SELECT HTNO, AVG(
+                CASE 
+                    WHEN HTREVSTAR IS NULL THEN 0
+                    ELSE HTREVSTAR
+                END
+            ) AS avgstar
+            FROM tlbook.HT_REVIEWS
+            GROUP BY HTNO
+        ) R
+        ON H.HTNO = R.HTNO
+        WHERE R.avgstar IS NOT NULL 
+        ORDER BY 4 DESC NULLS LAST
+    )
+    WHERE rank <= 5
+  ]]>
+  </select>
+
+  <!-- 호텔 판매 top5 -->
+  <select id="selectHotelSellRankList" resultType="com.booknow.travelapp.hotel.domain.HtHotelRankVO">
+  <![CDATA[ 
+    SELECT HTNO, HTNAME, HTRANK, rank AS hotelSellRank
+    FROM (
+        SELECT H.HTNO, H.HTNAME, H.HTRANK, R.hotelSellRank, 
+        RANK() OVER (ORDER BY R.hotelSellRank DESC, H.HTNO ASC) rank
+        FROM tlbook.TBL_HOTELS H
+        JOIN (
+            SELECT HTNO, COUNT(*) AS hotelSellRank
+            FROM tlbook.TBL_HT_SELL_TRANSACTIONS
+            WHERE HTSELLSTATUS = '판매완료'
+            GROUP BY HTNO
+        ) R
+        ON H.HTNO = R.HTNO
+        WHERE R.hotelSellRank IS NOT NULL 
+        ORDER BY 4 DESC NULLS LAST
+    )
+    WHERE rank <= 5
+  ]]>
+  </select>
+
+</mapper>

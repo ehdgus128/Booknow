@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<!-- 230704_박효준_항공구메페이지-->
+<mapper namespace="com.booknow.travelapp.common.mapper.AdminFlightPurchaseMapper">
+	
+	<!-- 구매한항공노선리스트 -->
+	<select id="airSelectRouteBuy"
+			resultType="com.booknow.travelapp.common.domain.AdminFlightBuyRouteVO"
+			parameterType="com.booknow.travelapp.common.domain.paging.AmFlightPurchasePagingDTO">
+	<![CDATA[
+		SELECT airbuyno, airRouteno, airroutebuyprice, airbuydate,airTotalSeat
+		FROM (SELECT /* + INDEX_DESC (a PK_AIRBUYNO_ROUTEBUY) */ ROWNUM rn, a.*
+		      FROM (SELECT airbuyno, airRouteno, airroutebuyprice, airbuydate,airTotalSeat
+                    FROM tbl_air_route_buy 
+                    ORDER BY airbuyno DESC)A 
+		      WHERE ROWNUM <= #{pageNum} * #{rowAmountPerPage})
+		WHERE rn >= ((#{pageNum} * #{rowAmountPerPage})- (#{rowAmountPerPage}-1))
+	]]>
+	</select>
+	<!-- 구매한 항공노선 갯수 -->
+	<select id="selectBuyRouteTotal" resultType="Long">
+		SELECT COUNT(*) AS rowTotal
+		FROM tbl_air_route_buy 
+	</select>
+	
+	<!-- 특정 노선 정보 -->
+	<select id="selectRoute" resultType="com.booknow.travelapp.common.domain.AdminFlightPurchaseVO">
+		SELECT airRouteno, airLinenm, vihicleId, depairportnm, arrAirportnm, depPlandTime,
+		       arrPlandTime, economyCharge, eSeatCnt, prestigeCharge, pSeatCnt
+		FROM tbl_air_route a INNER JOIN tbl_airline b ON a.airlineid = b.airlineid
+		WHERE airRouteno = #{airRouteno}
+	</select>	
+	
+	<!-- 항공노선등록 -->
+	<insert id="insertAirRoute" parameterType="com.booknow.travelapp.common.domain.AdminFlightPurchaseVO">
+
+		INSERT INTO tbl_air_route
+		values(TLBOOK.SEQ_AIR_ROUTE.nextval,
+			   #{airLineId},
+			   #{depAirportnm},
+			   #{arrAirportnm},
+			   #{depPlandTime},
+			   #{arrPlandTime},
+			   #{economyCharge},
+     		   #{prestigeCharge},
+     		   #{vihicleId},
+     		   #{eSeatCnt},
+     		   #{pSeatCnt}, 
+     		   #{buyflag})
+ 
+	</insert>
+	
+	<!-- 노선구매 테이블 입력 -->
+	<insert id="insertAirRouteBuy" parameterType="com.booknow.travelapp.common.domain.AdminFlightBuyRouteVO">
+		
+		INSERT INTO tbl_air_route_buy
+		VALUES (TLBOOK.SEQ_AIR_ROUTE_BUY.nextval, TLBOOK.SEQ_AIR_ROUTE.CURRVAL,
+				#{airRouteBuyPrice},DEFAULT,#{airTotalSeat})
+	</insert>
+
+
+	
+
+
+	
+	
+</mapper>

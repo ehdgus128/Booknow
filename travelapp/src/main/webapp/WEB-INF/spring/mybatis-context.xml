@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- properties type -->
+	<context:property-placeholder location="classpath:jdbcConfig/jdbc.properties"/>
+	
+	<bean id="hikariConfigWar" class="com.zaxxer.hikari.HikariConfig">
+		<property name="driverClassName" value="${jdbcHikari.driverClassName}"/>
+		<property name="jdbcUrl" value="${jdbcHikari.jdbcUrl}"/>
+		<property name="username" value="${jdbcHikari.username}"/>
+		<property name="password" value="${jdbcHikari.password}"/>
+	</bean>
+	
+	<bean id="hikariConfigDev" class="com.zaxxer.hikari.HikariConfig">
+		<property name="driverClassName" value="net.sf.log4jdbc.sql.jdbcapi.DriverSpy" />
+		<property name="jdbcUrl" value="jdbc:log4jdbc:oracle:thin:@localhost:1521:xe" /><!--  
+		<property name="jdbcUrl" value="jdbc:log4jdbc:oracle:thin:@172.16.5.15:1521:xe"/>  -->
+		<property name="username" value="TLBOOK" /> 
+		<property name="password" value="TLBOOK" /> 
+	</bean>
+
+
+	<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+		<constructor-arg ref="hikariConfigDev" /> 
+	</bean>
+		
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="mapperLocations" >
+			<list>
+				<value>classpath:com/booknow/travelapp/common/mapper/TLUsersMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/common/mapper/AdminMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/common/mapper/QNAAnswerMapper.xml</value><!-- 권태욱 07121229 -->
+				<value>classpath:com/booknow/travelapp/community/mapper/TLCommunityMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/community/mapper/TLCommunityReplyMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/common/mapper/TLHotelBuyMapper.xml</value>
+			  	<value>classpath:com/booknow/travelapp/common/mapper/TLHotelAttachFileMapper.xml</value>
+			  	<value>classpath:com/booknow/travelapp/common/mapper/AdminFlightPurchaseMapper.xml</value><!-- 0717박효준 항공구매내역 -->
+			  	<value>classpath:com/booknow/travelapp/common/mapper/AdminFlightPurchaseListMapper.xml</value><!-- 0717박효준 항공상품목록 -->
+				<value>classpath:com/booknow/travelapp/hotel/mapper/HtRoomsDetailMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/hotel/mapper/HtReservationsMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/hotel/mapper/HtHotelListMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/hotel/mapper/HtHotelReviewMapper.xml</value><!-- 20230706김가현_리뷰매퍼추가 -->
+				<value>classpath:com/booknow/travelapp/mapper/FAQBoardsMapper.xml</value><!-- FAQ게시판 0627.이창훈 --> 
+				<value>classpath:com/booknow/travelapp/mapper/FAQCategoryMapper.xml</value><!-- FAQ카테고리 0705.이창훈 --> 
+				<value>classpath:com/booknow/travelapp/mapper/QNAQuestionsMapper.xml</value><!-- QNA게시판 0712.이창훈 --> 
+				<value>classpath:com/booknow/travelapp/airways/mapper/AirRouteMapper.xml</value>
+				<value>classpath:com/booknow/travelapp/airways/mapper/AirLineRevMapper.xml</value><!-- 리뷰 페이지SQL 0703권태욱 -->
+				<value>classpath:com/booknow/travelapp/airways/mapper/MypageRevMapper.xml</value><!-- 0708 세연-->
+				<value>classpath:com/booknow/travelapp/airways/mapper/AirReservationsMapper.xml</value><!-- 0717 동현 -->
+				<value>classpath:com/booknow/travelapp/airways/mapper/AirPaymentMapper.xml</value><!-- 0717 동현 -->
+				
+			</list>
+		</property>
+	</bean>
+
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionFactory" />
+	</bean>
+
+	<mybatis-spring:scan base-package="com.booknow.travelapp" template-ref="sqlSession"/>
+
+	<!-- 스프링 트랜잭션 기능 활성화 -->
+	<tx:annotation-driven transaction-manager="transactionManagerTravel"/>
+	
+	<!-- Spring Transaction 관리자 빈(dataSource빈을 주입받음) -->
+	<bean id="transactionManagerTravel" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+</beans>

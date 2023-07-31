@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+  <!-- 작업자 : 김영환 일시: 2306261727 -->
+<mapper namespace="com.booknow.travelapp.hotel.mapper.HtReservationsMapper">
+
+  <!-- 작업자 : 김영환 일시: 2306261926 -->
+  <!-- 호텔 읽기 -->
+  <select id="selectHotel" resultType="com.booknow.travelapp.hotel.domain.HotelVO">
+    SELECT HTNO, HTNAME, HTRANK, HTADDRESS, HTTYPE, HTPHONE, HTEMAIL, BUSID, HTSTARTDATE, HTENDDATE
+    FROM tlbook.TBL_HOTELS
+    WHERE HTNO = #{htNo}
+  </select>
+
+  <!-- 방기준으로 호텔까지 읽기 -->
+  <select id="selectRoomJoinHotel" resultType="com.booknow.travelapp.hotel.domain.HtRoomVO">
+    SELECT R.HTROONO, R.HTROOTYPE, R.HTROOPRICE, R.HTNO, R.HTROONAME,
+    H.HTNAME, H.HTRANK, H.HTADDRESS, H.HTTYPE, H.HTPHONE, 
+    H.HTEMAIL, H.BUSID, H.HTSTARTDATE, H.HTENDDATE
+    FROM tlbook.TBL_HT_ROOMS R
+    INNER JOIN tlbook.TBL_HOTELS H
+    ON R.HTNO = H.HTNO
+    WHERE R.HTROONO = #{htRooNo}
+  </select>
+
+  <!-- 2306301924 김영환 예약가능한 방의 예약일자 -->
+  <select id="selectHtRoomSellDateResAble" resultType="com.booknow.travelapp.hotel.domain.HtRoomSellDateVO">
+    SELECT HTROOSELLDATEID, HTROOSELLPRICE, HTROOSELLDATE
+    FROM tlbook.TBL_HT_ROOM_SELL_DATE
+    WHERE HTROONO = #{htRooNo}
+    AND HTRESNO IS NULL
+  </select>
+
+  <!-- 예약테이블 관련 sql -->
+  <!-- 예약목록 리스트 -->
+  <select id="selectReservationList" resultType="com.booknow.travelapp.hotel.domain.HtReservationVO">
+    SELECT HTRESNO, HTRESNAME, HTRESSTATUS, HTRESPEOPLECOUNT, 
+    HTRESCHECKIN, HTRESCHECKOUT, HTRESEMAIL, HTRESPHONE, HTSELLTRANID
+    FROM tlbook.TBL_HT_RESERVATIONS
+  </select>
+
+  <!-- 예약 조회 -->
+  <select id="selectReservation" resultType="com.booknow.travelapp.hotel.domain.HtReservationVO">
+    SELECT HTRESNO, HTRESNAME, HTRESSTATUS, HTRESPEOPLECOUNT, 
+    HTRESCHECKIN, HTRESCHECKOUT, HTRESEMAIL, HTRESPHONE, HTSELLTRANID
+    FROM tlbook.TBL_HT_RESERVATIONS
+    WHERE HTRESNO = #{htResNo}
+  </select>
+
+  <!-- 유저 정보 읽어오기 -->
+  <select id="selectUserData" resultType="com.booknow.travelapp.common.domain.TLUsers">
+    SELECT USERID, USERNAME, USEREMAIL, USERADDRESS,
+    USERMILEAGE, USERBDAY, USERPHONENUMBER
+    FROM tlbook.TBL_USERS
+    WHERE USERID = #{userId}
+  </select>
+
+  <!-- 선택한 기간에 대한 유저 입장 구매 총액 (김영환 추가 2307061219) -->
+  <select id="selectResTotalPrice" resultType="com.booknow.travelapp.hotel.domain.HtRoomSellDateVO">
+    SELECT SUM(HTROOSELLPRICE) AS HTSELLPRICE
+    FROM tlbook.TBL_HT_ROOM_SELL_DATE
+    WHERE HTROOSELLDATE 
+    BETWEEN TO_TIMESTAMP(#{htResCheckInStr})
+    AND TO_TIMESTAMP(#{htResCheckOutStr})
+    AND HTROONO = #{htRooNo}
+  </select>
+
+  <!-- 예약 입력 -->
+  <insert id="insertReservation" parameterType="com.booknow.travelapp.hotel.domain.HtResTimeDTO">
+    <selectKey keyProperty="htResNo" order="BEFORE" resultType="Long">
+      SELECT TLBOOK.SEQ_HTRESERVATIONS.nextval FROM dual
+    </selectKey>
+
+    INSERT INTO TLBOOK.TBL_HT_RESERVATIONS
+    VALUES(
+        #{htResNo},
+        #{htResName},
+        0,
+        1,
+        TO_TIMESTAMP(#{htResCheckInStr}),
+        TO_TIMESTAMP(#{htResCheckOutStr}),
+        #{htResEmail},
+        #{htResPhone},
+        null
+    )
+  </insert>
+
+  <!-- 판매 테이블 임시 입력 -->
+  <insert id="insertSellTrans">
+    <selectKey keyProperty="htSellTranId" order="BEFORE" resultType="Long">
+      SELECT tlbook.SEQ_HTSELLTRANS.NEXTVAL FROM dual
+    </selectKey>
+
+    INSERT INTO tlbook.TBL_HT_SELL_TRANSACTIONS
+    VALUES(
+      #{htSellTranId},
+      null,
+      DEFAULT,
+      #{htSellTranPayment},
+      null,
+      #{htSellPrice},
+      #{htNo},
+      #{sellUuid}
+    )
+  </insert>
+
+  <!-- 방의 sell date의 null을 체크해서 예약이 가능한지 체크 -->
+  <select id="selectResAbleCheck" resultType="Integer">
+    <![CDATA[
+    SELECT (
+      CASE
+          WHEN (TO_DATE(#{htResCheckOutStr}) - TO_DATE(#{htResCheckInStr})) = COUNT(*) 
+          THEN 1
+          ELSE 0
+      END
+    ) ableRes
+    FROM tlbook.TBL_HT_ROOM_SELL_DATE
+    WHERE HTROONO = #{htRooNo}
+    AND HTRESNO IS NULL
+    AND HTROOSELLDATE BETWEEN TO_TIMESTAMP(#{htResCheckInStr})
+    AND TO_TIMESTAMP(#{htResCheckOutStr})-1 
+    ]]>
+  </select>
+
+  <!-- 방에 예약을 완료했음을 업데이트 -->
+  <update id="updateResConfirmSellDate">
+    UPDATE tlbook.TBL_HT_ROOM_SELL_DATE
+    SET HTRESNO = #{htResNo}
+    WHERE HTROONO = #{htRooNo}
+    AND HTROOSELLDATE BETWEEN TO_TIMESTAMP(#{htResCheckInStr})
+    AND TO_TIMESTAMP(#{htResCheckOutStr})-1
+  </update>
+
+  <!-- 판매 완료 했음을 판매 테이블에서 업데이트 -->
+  <update id="updateResConfirmSellTran">
+    UPDATE tlbook.TBL_HT_SELL_TRANSACTIONS
+    SET HTSELLSTATUS = '판매완료',
+    HTSELLTRANDATE = SYSTIMESTAMP,
+    USERID = #{userId}
+    WHERE SELLUUID = #{sellId}
+  </update>
+
+  <!-- 예약 테이블에 판매와 연결 -->
+  <update id="updateResConfirmRes">
+    UPDATE tlbook.TBL_HT_RESERVATIONS
+    SET HTRESSTATUS = 1, 
+    HTSELLTRANID = (
+        SELECT HTSELLTRANID
+        FROM tlbook.TBL_HT_SELL_TRANSACTIONS
+        WHERE SELLUUID = #{sellId}
+    )
+    WHERE HTRESNO = #{htResNo}
+  </update>
+
+  <!-- 결제 취소 업데이트 -->
+  <update id="updateResCancelSellTran">
+    UPDATE tlbook.TBL_HT_SELL_TRANSACTIONS
+    SET HTSELLSTATUS = '결제취소',
+    HTSELLTRANDATE = SYSTIMESTAMP
+    WHERE SELLUUID = #{sellId}   
+  </update>
+
+  <update id="updateResCancelRes">
+    UPDATE tlbook.TBL_HT_RESERVATIONS
+    SET HTRESSTATUS = 0
+    WHERE HTSELLTRANID = (
+        SELECT HTSELLTRANID
+        FROM tlbook.TBL_HT_SELL_TRANSACTIONS
+        WHERE SELLUUID = #{sellId}
+    )    
+  </update>
+
+  <update id="updateResCancelSellDate">
+    UPDATE tlbook.TBL_HT_ROOM_SELL_DATE
+    SET HTRESNO = NULL
+    WHERE HTRESNO = (
+        SELECT HTRESNO
+        FROM tlbook.TBL_HT_RESERVATIONS
+        WHERE HTSELLTRANID = (
+            SELECT HTSELLTRANID
+            FROM tlbook.TBL_HT_SELL_TRANSACTIONS
+            WHERE SELLUUID = #{sellId}
+        )
+    )
+  </update>
+
+  <!-- 나의 호텔 예약 리스트 기능 추가 김영환 -->
+  <!-- 나의 결제 리스트 -->
+  <select id="selectUserHtResList" resultType="com.booknow.travelapp.hotel.domain.HtSellTransVO">
+    SELECT S.HTSELLTRANID, S.HTSELLTRANDATE, 
+    S.HTSELLTRANPAYMENT, S.HTSELLSTATUS, S.HTSELLPRICE, S.HTNO, S.SELLUUID,
+    R.HTRESNO, R.HTRESSTATUS
+    FROM tlbook.TBL_HT_SELL_TRANSACTIONS S
+    JOIN tlbook.TBL_HT_RESERVATIONS R
+    ON S.HTSELLTRANID = R.HTSELLTRANID
+    WHERE S.USERID = #{userId}
+    AND R.HTSELLTRANID IS NOT NULL
+    ORDER BY 2 DESC
+  </select>
+
+  <!-- 결제 리스트 페이징을 위한 총수 -->
+  <select id="selectUserHtResListCount" resultType="Integer">
+    SELECT COUNT(*)
+    FROM tlbook.TBL_HT_SELL_TRANSACTIONS S
+    JOIN tlbook.TBL_HT_RESERVATIONS R
+    ON S.HTSELLTRANID = R.HTSELLTRANID
+    WHERE S.USERID = #{userId}
+    AND R.HTSELLTRANID IS NOT NULL
+  </select>
+
+  <!-- 예약 상세 -->
+  <select id="selectHtResDetail" resultType="com.booknow.travelapp.hotel.domain.HtReservationVO">
+    SELECT HTRESNO, HTRESNAME, HTRESSTATUS, HTRESPEOPLECOUNT,
+    HTRESCHECKIN, HTRESCHECKOUT, HTRESEMAIL, HTRESPHONE, HTSELLTRANID
+    FROM tlbook.TBL_HT_RESERVATIONS
+    WHERE HTRESNO = #{htResNo}
+  </select>
+
+  <!-- 예약 번호로 방과 호텔 정보 select -->
+  <select id="selectResNoSearchHotelRoom" resultType="com.booknow.travelapp.hotel.domain.HtRoomVO">
+    SELECT R.HTROONO, R.HTROOTYPE, R.HTROOPRICE, R.HTROONAME,
+    H.HTNO, H.HTNAME, H.HTRANK, H.HTAREACODE, H.HTTYPE, H.HTPHONE, 
+    H.HTEMAIL, H.BUSID, H.HTSTARTDATE, H.HTENDDATE, H.HTADDRESS
+    FROM tlbook.TBL_HT_ROOMS R
+    JOIN tlbook.TBL_HOTELS H
+    ON R.HTNO = H.HTNO
+    WHERE (H.HTNO, R.HTROONO) IN (
+        SELECT MAX(R.HTNO) HTNO, MAX(R.HTROONO) HTROONO
+        FROM tlbook.TBL_HT_ROOM_SELL_DATE S
+        JOIN tlbook.TBL_HT_ROOMS R
+        ON S.HTROONO = R.HTROONO
+        JOIN tlbook.TBL_HOTELS H
+        ON R.HTNO = H.HTNO
+        WHERE S.HTRESNO = #{htResNo}
+        GROUP BY S.HTRESNO
+    )    
+  </select>
+
+  <!-- 예약 번호로 예약과 판매 정보 select -->
+  <select id="selectResNoSearchsellRes" resultType="com.booknow.travelapp.hotel.domain.HtReservationVO">
+    SELECT S.HTSELLSTATUS, S.HTSELLPRICE, S.SELLUUID,
+    R.HTRESNO, R.HTRESNAME, R.HTRESSTATUS, R.HTRESPEOPLECOUNT, 
+    R.HTRESCHECKIN, R.HTRESCHECKOUT, R.HTRESEMAIL, R.HTRESPHONE, R.HTSELLTRANID
+    FROM tlbook.TBL_HT_SELL_TRANSACTIONS S
+    JOIN tlbook.TBL_HT_RESERVATIONS R
+    ON S.HTSELLTRANID = R.HTSELLTRANID
+    WHERE HTRESNO = #{htResNo}   
+  </select>
+
+</mapper>

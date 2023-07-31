@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:sec="http://www.springframework.org/schema/security"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.4.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<!-- 사용자 password 암호화 처리 빈: BCrypt 방식 암호화 -->
+	<bean id="bCryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+	
+	<!-- 사용자 승인/인증을 위해 필요한 데이터를 가져오는 bean -->
+	<bean id="travelMemberUserDetailsServiceImpl" class="com.booknow.travelapp.common.security.TravelMemberUserDetailsServiceImpl"/>
+
+	<!-- 로그인 성공시의 처리 로직이 정의된 클래스의 빈 등록 -->
+	<bean id="tlLoginSuccessHandler" class="com.booknow.travelapp.common.security.TlLoginSuccessHandler"/>
+	
+	<!-- AccessDeniedHandler 구현클래스 빈 -->
+	<bean id="tlAccessDeniedHandler" class="com.booknow.travelapp.common.security.TLAccessDeniedHandler" />
+	
+<!-- 230705 임지혁 수정: loginsuccesshandler, accesdeniedhandler 빈 등록, 
+					  intercepter-url, login, logout page 경로, 자동로그인 설정 -->	
+	
+	<!-- 실제 security 여기서부터 설정 -->
+	<sec:http>
+		<!-- 
+		<sec:intercept-url pattern="/" access="hasAuthority('ADMIN')"/> -->
+		<sec:intercept-url pattern="/" access="permitAll"/>
+		<sec:intercept-url pattern="/login" access="isAnonymous()"/>
+		<sec:intercept-url pattern="/join" access="isAnonymous()"/>
+		
+		<!-- <sec:form-login default-target-url="/"/>
+		<sec:logout/> -->
+		
+		<sec:form-login login-page="/login"
+						login-processing-url="/login"
+						default-target-url="/"
+						authentication-success-handler-ref="tlLoginSuccessHandler"
+						/>
+		
+		<sec:logout logout-url="/logout" logout-success-url="/"/>
+		
+		<!-- 자동 로그인 1주일 유지 -->
+		<sec:remember-me data-source-ref="dataSource"
+						 remember-me-parameter="rememberMe"
+						 token-validity-seconds="604800"
+						 />
+						 
+		<sec:access-denied-handler ref="tlAccessDeniedHandler"/>	
+
+	</sec:http>
+	<!-- security:http end -->
+	
+
+	
+
+<!-- 	승인/인증 데이터를 가져올 매니저 클래스 -->
+	<sec:authentication-manager>
+		<!-- <security:ldap-authentication-provider></security:ldap-authentication-provider> --> <!-- 인증 서버 형태로 구성시 사용 -->
+		<sec:authentication-provider user-service-ref="travelMemberUserDetailsServiceImpl">
+			<sec:password-encoder ref="bCryptPasswordEncoder"/> <!-- 실제 암호화 동작 bean -->
+		</sec:authentication-provider>
+	</sec:authentication-manager>
+<!-- 	security:authentication-manager end -->
+
+</beans>

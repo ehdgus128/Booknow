@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <!-- 권태욱 202307111253 -->
+ <mapper namespace="com.booknow.travelapp.common.mapper.QNAAnswerMapper">
+
+    <!-- 리스트 조회 - QNAanswer -->
+<select id="selectQNAAnswerList" resultType="com.booknow.travelapp.common.domain.QNAAnswerQuestionsVO"
+        parameterType="com.booknow.travelapp.common.domain.paging.QNAAnswerPagingDTO">
+  <![CDATA[
+		SELECT *
+		FROM (
+		  SELECT
+		    Q.qnaQno, Q.qnaQcategory, Q.qnaQtitle, Q.qnaQcontent, Q.qnaQwriter, Q.qnaQregDate, Q.qnaQmodDate, Q.qnaQprocFlag,
+		    A.qnaAno, A.qnaAregDate, A.qnaAmodDate, A.qnaAcontent, A.qnaAwriter,
+		    ROW_NUMBER() OVER (ORDER BY Q.qnaQno DESC) AS rn
+		  FROM
+		    tlbook.tbl_QNA_Questions Q
+		  LEFT JOIN
+		    tlbook.tbl_QNA_Answers A ON Q.qnaQno = A.qnaQno
+		)
+		WHERE     rn <= (#{pageNum} * #{rowAmountPerPage})
+		  AND rn >= ((#{pageNum} * #{rowAmountPerPage}) - (#{rowAmountPerPage} - 1))
+
+
+  ]]>
+</select>
+
+
+
+
+
+
+    <!-- 토탈 -->
+   <select id="selectRowTotal" resultType="long"
+    parameterType="com.booknow.travelapp.common.domain.paging.QNAAnswerPagingDTO">
+	  SELECT COUNT(*) AS totalRows
+	FROM (
+	  SELECT
+	    Q.qnaQno, Q.qnaQcategory, Q.qnaQtitle, Q.qnaQcontent, Q.qnaQwriter, Q.qnaQregDate, Q.qnaQmodDate, Q.qnaQprocFlag,
+	    A.qnaAno, A.qnaAregDate, A.qnaAmodDate, A.qnaAcontent, A.qnaAwriter,
+	    ROW_NUMBER() OVER (ORDER BY Q.qnaQno) AS rn
+	  FROM
+	    tlbook.tbl_QNA_Questions Q
+	  LEFT JOIN
+	    tlbook.tbl_QNA_Answers A ON Q.qnaQno = A.qnaQno
+	) 
+	</select>
+
+
+    <!-- 게시물 등록 -->
+     <insert id="insertQNAanswer" parameterType="com.booknow.travelapp.common.domain.QNAAnswerQuestionsVO">
+        <selectKey keyProperty="qnaAno" order="BEFORE" resultType="long">
+            SELECT tlbook.seq_QNA_Answers.NEXTVAL FROM dual
+        </selectKey>
+     INSERT INTO tlbook.tbl_QNA_Answers (qnaAno, qnaAregDate, qnaAmodDate, qnaAcontent, qnaAwriter, qnaQno)
+        VALUES (#{qnaAno}, DEFAULT, DEFAULT, #{qnaAcontent}, #{qnaAwriter}, #{qnaQno})
+    </insert>
+    
+    <update id="updateQnaQprocFlag"  parameterType="long">
+   		 UPDATE tlbook.tbl_QNA_Questions
+		SET qnaQprocFlag = 1
+		WHERE qnaQno = ${qnaQno}
+	 </update>
+    
+    <!-- 게시물 수정-->
+	<update id="updateQNAanswer" parameterType="com.booknow.travelapp.common.domain.QNAAnswerQuestionsVO">
+  UPDATE tlbook.tbl_QNA_Answers
+	    SET 
+	    qnaAcontent = ${qnaAcontent},
+	    qnaAwriter = ${qnaAwriter},
+        qnaAmodDate= DEFAULT
+	    WHERE qnaAno = ${qnaAno}
+	</update>
+
+    
+    <select id="rowTotalDifference"   resultType="long">
+     SELECT (Q.totalQnaQues - A.totalQnaAns) AS rowTotalDifference
+		FROM (
+		  SELECT COUNT(*) AS totalQnaQues
+		  FROM tlbook.tbl_QNA_Questions
+		) Q,
+		(
+		  SELECT COUNT(*) AS totalQnaAns
+		  FROM tlbook.tbl_QNA_Answers
+		) A 
+    </select>
+    
+    
+    	  <select id="selectQnaCategoryCounts" resultType="java.util.Map">
+	        SELECT
+	            SUM(CASE WHEN qnaQcategory LIKE '%항공%' AND qnaQprocFlag = '0' THEN 1 ELSE 0 END) AS count_air,
+	            SUM(CASE WHEN qnaQcategory LIKE '%공통%' AND qnaQprocFlag = '0' THEN 1 ELSE 0 END) AS count_common,
+	            SUM(CASE WHEN qnaQcategory LIKE '%호텔%' AND qnaQprocFlag = '0' THEN 1 ELSE 0 END) AS count_hotel
+	        FROM tlbook.tbl_QNA_Questions
+	    </select>
+    
+       <!--  관리자댓글 삭제-->
+    <delete id="deleteQnaAnswer"  parameterType="long">
+      DELETE FROM tlbook.tbl_QNA_Answers
+  		WHERE qnaQno = ${qnaQno}
+    </delete>
+    
+    <!--  유저댓글 삭제-->
+    <delete id="deleteQnaQuestion"  parameterType="long">
+      DELETE FROM tlbook.tbl_QNA_Questions
+  	WHERE qnaQno = ${qnaQno}
+    </delete>
+    
+    
+    
+   <select id="selectDetail" resultType="com.booknow.travelapp.common.domain.QNAAnswerQuestionsVO">
+    <![CDATA[
+    SELECT QNAQNO, QNAQCATEGORY, QNAQTITLE, QNAQCONTENT, 
+	QNAQWRITER, QNAQREGDATE, QNAQMODDATE, QNAQPROCFLAG,
+	QNAANO, QNAAREGDATE, QNAAMODDATE, QNAACONTENT, QNAAWRITER
+	FROM (
+	    SELECT /*+ INDEX_DESC(A PK_QNAQNO_QNA_QUESTIONS)*/ ROWNUM rn, 
+	A.QNAQNO, A.QNAQCATEGORY, A.QNAQTITLE, A.QNAQCONTENT, 
+	A.QNAQWRITER, A.QNAQREGDATE, A.QNAQMODDATE, A.QNAQPROCFLAG,
+	B.QNAANO, B.QNAAREGDATE, B.QNAAMODDATE, B.QNAACONTENT, B.QNAAWRITER
+	FROM tlbook.TBL_QNA_QUESTIONS A
+	LEFT  OUTER JOIN tlbook.TBL_QNA_ANSWERS B
+	ON A.QNAQNO = B.QNAQNO
+		    ]]>
+		 <trim prefix="where(" suffix=") " prefixOverrides="OR">
+				<foreach item='scope' collection="scopeArray">
+					<trim prefix="OR">
+						<choose>
+							<when test="scope == 'T'.toString()"> qnaAno IS NULL AND qnaQcategory LIKE '%'||#{keyword}||'%'</when>
+							 <when test="scope == 'Q'.toString()"> qnaQprocFlag LIKE  '1' AND qnaQcategory LIKE '%'||#{keyword}||'%' </when>
+							<when test="scope == 'A'.toString()">  qnaQprocFlag LIKE '%'||#{keyword}||'%'</when>
+						</choose>
+					</trim> 
+				</foreach>
+			</trim>	    
+		    <![CDATA[
+		        AND ROWNUM <= (#{pageNum} * #{rowAmountPerPage})
+		        )
+		        WHERE rn >= ((#{pageNum} * #{rowAmountPerPage})-(#{rowAmountPerPage} - 1 ))
+		    ]]>
+		</select>
+		
+		
+		<select id="selectRowTotalDetail" resultType="long"
+  			  parameterType="com.booknow.travelapp.common.domain.paging.QNAAnswerPagingDTO">
+		    <![CDATA[
+		    SELECT COUNT(*) AS total
+		    FROM tlbook.TBL_QNA_QUESTIONS A
+		    LEFT    JOIN tlbook.TBL_QNA_ANSWERS B
+		    ON A.QNAQNO = B.QNAQNO
+		    ]]>
+		    <trim prefix="WHERE" prefixOverrides="AND |OR ">
+		        <foreach item='scope' collection="scopeArray" separator=" ">
+		            <choose>
+		                <when test="scope == 'T'.toString()"> qnaAno IS NULL AND qnaQcategory LIKE '%'||#{keyword}||'%'</when>
+		                <when test="scope == 'Q'.toString()"> qnaQprocFlag LIKE  '1' AND qnaQcategory LIKE '%'||#{keyword}||'%' </when>
+		                <when test="scope == 'A'.toString()"> qnaQprocFlag LIKE '%'||#{keyword}||'%'</when>
+		            </choose>
+		        </foreach>
+		    </trim>
+		</select>
+		 
+	
+		 
+		 
+<!--     <select id="selectDetail" resultType="com.booknow.travelapp.common.domain.QNAAnswerQuestionsVO"   >
+	  <![CDATA[
+			 SELECT *
+				FROM (
+				  SELECT
+				    Q.qnaQno, Q.qnaQcategory, Q.qnaQtitle, Q.qnaQcontent, Q.qnaQwriter, Q.qnaQregDate, Q.qnaQmodDate, Q.qnaQprocFlag,
+				    A.qnaAno, A.qnaAregDate, A.qnaAmodDate, A.qnaAcontent, A.qnaAwriter,
+				    ROW_NUMBER() OVER (ORDER BY Q.qnaQno DESC) AS rn
+				  FROM
+				    tlbook.tbl_QNA_Questions Q
+				  LEFT JOIN
+				    tlbook.tbl_QNA_Answers A ON Q.qnaQno = A.qnaQno
+				    
+				)
+				WHERE    ]]>
+			<trim prefix="(" suffix=") AND" prefixOverrides="OR">
+				<foreach item='scope' collection="scopeArray">
+					<trim prefix="OR">
+						<choose>
+							<when test="scope == 'T'.toString()"> qnaAno IS NULL AND qnaQcategory LIKE '%'||#{keyword}||'%'</when>
+							<when test="scope == 'Q'.toString()">  qnaQcategory LIKE '%'||#{keyword}||'%'</when>
+						</choose>
+					</trim> 
+				</foreach>
+			</trim>	      		  
+	      	
+			    <![CDATA[
+			  rownum <= (#{pageNum} * #{rowAmountPerPage})
+			  AND rn >= ((#{pageNum} * #{rowAmountPerPage}) - (#{rowAmountPerPage} - 1))
+	
+	
+	  ]]>
+</select> -->
+     <!-- 토탈 -->
+   <!-- <select id="selectRowTotalDetail" resultType="long"
+    parameterType="com.booknow.travelapp.common.domain.paging.QNAAnswerPagingDTO">
+	  SELECT COUNT(*) AS totalRows
+	FROM (
+	  SELECT
+	    Q.qnaQno, Q.qnaQcategory, Q.qnaQtitle, Q.qnaQcontent, Q.qnaQwriter, Q.qnaQregDate, Q.qnaQmodDate, Q.qnaQprocFlag,
+	    A.qnaAno, A.qnaAregDate, A.qnaAmodDate, A.qnaAcontent, A.qnaAwriter,
+	    ROW_NUMBER() OVER (ORDER BY Q.qnaQno) AS rn
+	  FROM
+	    tlbook.tbl_QNA_Questions Q
+	  LEFT JOIN
+	    tlbook.tbl_QNA_Answers A ON Q.qnaQno = A.qnaQno  
+	    <where>
+			<trim prefix="(" suffix=")" prefixOverrides="OR">
+				<foreach item='scope' collection="scopeArray">
+					<trim prefix="OR">
+						<choose>
+							<when test="scope == 'T'.toString()"> qnaAno IS NULL AND qnaQcategory LIKE '%'||#{keyword}||'%'</when>
+							<when test="scope == 'Q'.toString()"> qnaQcategory LIKE '%'||#{keyword}||'%'</when>
+						</choose>
+					</trim> 
+				</foreach>
+			</trim>	 
+		</where>
+	) 
+	</select> -->
+    
+    
+    
+
+</mapper>
+
+
+
+	 
+	
+	
+		
+		

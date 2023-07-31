@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.booknow.travelapp.mapper.QNAQuestionsMapper">
+
+<!-- 0712_창훈 작성 -->
+
+<!--	//게시물 등록 
+	//public Integer insertMyQNASelectKey(QnaBoardsVO qnaBoard);
+	
+	//특정 게시물 조회
+	public QnaBoardsVO selectQnaQTitle (Long qnaQno);
+	
+	//특정 게시물 삭제요청
+	public int updateQnaFlag (Long qnaQno);
+	
+	//특정게시물 수정
+	public int updateQnaQContent (QnaBoardsVO qnaBoard);-->
+
+	<!-- 게시물 등록  -->
+	<insert id="insertMyQNASelectKey" >
+		<selectKey keyProperty="qnaQno" order="BEFORE" resultType="long">
+		 SELECT TLBOOK.QNA_QUESTIONS.nextval FROM dual
+		 </selectKey>
+
+			INSERT INTO tlbook.tbl_QNA_Questions
+			VALUES( #{qnaQno},
+			        #{qnaQcategory},
+			        #{qnaQtitle},
+			        #{qnaQcontent},
+			        #{qnaQwriter},
+			        DEFAULT,
+			        DEFAULT,
+			        DEFAULT
+				  )
+	</insert>
+	
+	<!-- 본인 게시물 조회  
+	<select id="selectQnaQTitle"  resultType="com.booknow.travelapp.domain.QnaBoardsVO">
+		SELECT qnaQno,qnaQcategory,qnaQtitle,qnaQcontent,qnaQwriter,qnaQregDate,qnaQmodDate,qnaQprocFlag
+		FROM TLBOOK.tbl_qna_questions 
+		WHERE qnaQwriter=#{qnaQwriter} ORDER BY qnaQno DESC 
+	</select> -->
+	
+	<!-- 전체 게시물 조회  
+	<select id="selectQnaQTitle"  resultType="com.booknow.travelapp.domain.QnaBoardsVO">
+		SELECT qnaQno,qnaQcategory,qnaQtitle,qnaQcontent,qnaQwriter,qnaQregDate,qnaQmodDate,qnaQprocFlag
+		FROM TLBOOK.tbl_qna_questions 
+		WHERE qnaQno >0 ORDER BY qnaQno DESC 
+	</select>-->
+	
+	<!-- 전체 게시물 조회 :페이징처리-->  
+	<select id="selectQnaQTitle" resultType="com.booknow.travelapp.domain.QnaBoardsVO">
+			<![CDATA[
+		 SELECT qnaQno,qnaQcategory,qnaQtitle,qnaQcontent,qnaQwriter,qnaQregDate,qnaQmodDate,qnaQprocFlag
+		 FROM ( SELECT /*+ INDEX_DESC (a pk_myboard) */ ROWNUM rn, a.*
+				 FROM (SELECT qnaQno,qnaQcategory,qnaQtitle,qnaQcontent,qnaQwriter,qnaQregDate,qnaQmodDate,qnaQprocFlag
+				 	 FROM TLBOOK.tbl_qna_questions
+				 	ORDER BY qnaQno DESC)  a
+				 WHERE qnaQwriter=#{qnaQwriter} and ROWNUM <= ( #{pageNum} * #{rowAmountPerPage} )
+				 )
+		 WHERE rn >= ( ( #{pageNum} * #{rowAmountPerPage} ) - ( #{rowAmountPerPage} - 1 ) )
+		 ]]>
+		 
+	 </select>
+	
+	<!-- 게시물 총 개수 조회(페이징): 답변 된 행 포함 -->
+	 <select id="selectRowAmountTotal" resultType="long">
+	 <![CDATA[
+	 SELECT count(*) totalCnt FROM  TLBOOK.tbl_qna_questions 
+	  WHERE qnaQno > 0 and qnaQwriter=#{qnaQwriter}
+	 ]]>
+	 </select>
+
+	
+	<!-- 특정 게시물 조회 -->
+	<select id="selectQnaQcontent" resultType="com.booknow.travelapp.domain.QnaBoardsVO">
+		SELECT qnaQno,qnaQcategory,qnaQtitle,qnaQcontent,qnaQwriter,qnaQregDate,qnaQmodDate,qnaQprocFlag
+		FROM TLBOOK.tbl_qna_questions 
+		WHERE qnaQno = #{qnaQno}
+	</select>
+
+	<!-- 특정 게시물 수정 -->
+	<update id="updateQnaQContent">
+		update TLBOOK.tbl_qna_questions 
+		set qnaQtitle = #{qnaQtitle},
+			qnaQcontent=#{qnaQcontent},
+			qnaQmodDate= DEFAULT
+		WHERE qnaQno = #{qnaQno}
+	</update>
+
+
+	<!-- 특정 등록 요청  -->
+	<update id="updateQnaFlag">
+		UPDATE TLBOOK.tbl_qna_questions 
+		set qnaQprocFlag =1
+		where qnaQno = #{qnaQno}
+	</update>
+	
+	<!-- 특정 게시물 답변 조회  -->
+	<select id="selectQnaAnswerlist" resultType="com.booknow.travelapp.domain.QnaBoardsVO">
+		 <![CDATA[
+		select qnaAno, qnaAregDate, qnaAmodDate, qnaAcontent, qnaAwriter, qnaQno , level as lvl
+		from ( select rownum rn, b.*
+				from( select level lvl,a.*
+					from( select/*+index_asc(a idx_QNA_Answers_qnaQno_qnaAno)*/ *
+							from tlbook.tbl_QNA_Answers
+							where qnaQno = #{qnaQno}
+							)a
+						start with  qnaQno = #{qnaQno}
+						connect by prior  qnaQno =  qnaAno
+						order siblings by qnaAno desc
+						) b
+					)
+		  where rn  BETWEEN #{pageNum} * #{rowAmountPerPage}
+ 						- (#{rowAmountPerPage} - 1)
+ 					AND #{pageNum} * #{rowAmountPerPage}					
+		]]>
+							
+	</select>
+
+	<!-- 답변 총 개수 확인 -->
+	 <select id="selectQnaAnswerTotal" resultType="int">
+	 <![CDATA[
+	 SELECT /*+ INDEX (tbl_QNA_Answers idx_QNA_Answers_qnaQno_qnaAno) */ count(*)
+	 FROM tlbook.tbl_QNA_Answers
+	 WHERE qnaQno = #{ qnaAnswerPagingDTO.qnaQno}
+	 ]]>
+	 </select>
+	 
+ <!-- 특정 게시물에 답변 조회-->
+	 <select id="selectQNAAnswer" resultType="com.booknow.travelapp.domain.QnaBoardsVO">
+	 <![CDATA[
+		SELECT qnaAno, qnaAregDate, qnaAmodDate, qnaAcontent, qnaAwriter, qnaQno
+		FROM tlbook.tbl_QNA_Answers 
+		WHERE qnaQno= #{qnaQno}
+	 ]]>
+	 </select>
+
+<!-- 기본키가 사용하는 인덱스의 키 컬럼을 (게시물번호, 댓글번호) 순으로 지정하여 인덱스를 생성 -->
+
+</mapper>

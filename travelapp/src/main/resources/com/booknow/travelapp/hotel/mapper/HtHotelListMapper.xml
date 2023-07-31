@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<!--  작업자 : 정지은 호텔리스트 날짜 230627 -->
+<mapper namespace="com.booknow.travelapp.hotel.mapper.HtHotelListMapper">
+	
+	<!--  호텔리스트  왼쪽의 모든 데이터 , 하위쿼리  -->
+	<select id="selectHotelList" resultType="com.booknow.travelapp.hotel.domain.HotelVO">
+		<![CDATA[ 
+		SELECT H.HTNO, H.HTNAME, H.HTRANK, H.HTAREACODE, H.HTTYPE, H.HTPHONE, 
+		H.HTEMAIL, H.BUSID, H.HTSTARTDATE, H.HTENDDATE, H.HTAVAILDATE, H.HTADDRESS,
+		M.MINPRICE
+		FROM tlbook.TBL_HOTELS H
+		LEFT OUTER JOIN (
+		SELECT R.HTNO, MIN(S.HTROOSELLPRICE) minprice
+		FROM tlbook.TBL_HT_ROOMS R
+		JOIN tlbook.TBL_HT_ROOM_SELL_DATE S
+		ON R.HTROONO = S.HTROONO
+		GROUP BY R.HTNO
+		) M
+		ON H.HTNO = M.HTNO
+		]]>
+		<trim prefixOverrides="and" prefix="where" >
+			<if test="htAreaCode != null and htAreaCode != ''">
+				<trim prefix="and (" suffix=")">
+					htAreaCode = #{htAreaCode}
+				</trim>
+			</if>
+			<if test=" htStartDateStr != null and htEndDateStr != null ">
+				<trim prefix="and (" suffix=")">
+					<![CDATA[ 
+					TO_TIMESTAMP(#{htStartDateStr},'yyyy-MM-dd') BETWEEN H.HTSTARTDATE AND H.HTENDDATE
+					AND TO_TIMESTAMP(#{htEndDateStr},'yyyy-MM-dd') BETWEEN H.HTSTARTDATE AND H.HTENDDATE
+					]]>
+				</trim>
+			</if>
+		</trim>
+		<if test="htrankflg != 0 and htrankflg != null">
+			<trim prefix="order by H.HTRANK" suffix=" NULLS LAST">
+				<if test="htrankflg == 1">
+					desc	
+				</if>
+				<if test="htrankflg == 2">
+					asc	
+				</if>
+			</trim>
+		</if>				
+		<if test="htpriceFlg != 0 and htpriceFlg != null">
+			<trim prefix="order by M.MINPRICE" suffix=" NULLS LAST">	
+				<if test="htpriceFlg == 1">
+					desc					
+				</if>
+				<if test="htpriceFlg == 3">	
+					asc
+				</if>	
+			</trim>
+		</if>	
+	</select> <!--  end -selectHotelList   -->
+	
+		
+	
+	<!-- 총 호텔갯수   -->
+	<select id="selectRowAmountTotal" resultType="Integer">
+		<![CDATA[ 
+		SELECT COUNT(*) AS rowAmountTotal
+		FROM tlbook.TBL_HOTELS H
+		LEFT OUTER JOIN (
+		SELECT R.HTNO, MIN(S.HTROOSELLPRICE) minprice
+		FROM tlbook.TBL_HT_ROOMS R
+		JOIN tlbook.TBL_HT_ROOM_SELL_DATE S
+		ON R.HTROONO = S.HTROONO
+		GROUP BY R.HTNO
+		) M
+		ON H.HTNO = M.HTNO
+		]]>
+		<trim prefixOverrides="and" prefix="where" >
+			<if test="htAreaCode != null and htAreaCode != ''">
+				<trim prefix="and (" suffix=")">
+					htAreaCode = #{htAreaCode}
+				</trim>
+			</if>
+			<if test=" htStartDateStr != null and htEndDateStr != null ">
+				<trim prefix="and (" suffix=")">
+					<![CDATA[ 
+					TO_TIMESTAMP(#{htStartDateStr},'yyyy-MM-dd') BETWEEN H.HTSTARTDATE AND H.HTENDDATE
+					AND TO_TIMESTAMP(#{htEndDateStr},'yyyy-MM-dd') BETWEEN H.HTSTARTDATE AND H.HTENDDATE
+					]]>
+				</trim>
+			</if>
+		</trim>
+	</select><!--  end -selectHotelList   -->
+	
+	
+	
+	<!-- 첨부파일 이미지 보여주기 -->
+	
+	<!-- 특정호텔의 첨부파일조회 -->
+	<select id="selectAttachFileOfHotel" 
+			resultType="com.booknow.travelapp.common.domain.TLHotelAttachFilesVO">
+		SELECT htuuid,htUploadPath,htFileName,htFileType,htNo 
+		  FROM tlbook.tbl_ht_attachFiles
+		 WHERE htNo = #{htNo}
+		AND ROWNUM =1
+	</select>
+	
+	<!-- 특정 방의 사진 조회  -->
+	<select id="selectAttachFileOfRoom"
+			resultType="com.booknow.travelapp.common.domain.TLRoomAttachFilesVO">
+		SELECT rmUuid,rmUploadPath,rmFileName,rmFileType,htRooNo 
+		  FROM tlbook.tbl_ht_room_attachfiles
+		 WHERE htRooNo = #{htRooNo}
+		 AND ROWNUM =1
+	</select>
+	
+
+
+</mapper>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<!-- 2307031654_김영환_관리자페이지xml -->
+<mapper namespace="com.booknow.travelapp.common.mapper.AdminMapper">
+
+<!-- ############관리자 공지사항 -->
+  <!-- 공지사항 목록 페이징 처리 -->
+  <select id="selectManagerBoardList" 
+          parameterType="com.booknow.travelapp.common.domain.paging.AmBoardPagingDTO"
+          resultType="com.booknow.travelapp.common.domain.AdminManagerBoardVO">
+    <![CDATA[ 
+    SELECT TMBNO, TMBTITLE, TMBCONTENT, TMBWRITER, 
+    TMBTYPE, TMBREGDATE, TMBMODDATE, TMBDELFLAG
+    FROM (
+            SELECT /*+ INDEX_DESC(M PK_tmBno_mgboards) */ ROWNUM rn, M.*
+            FROM tlbook.TBL_MANAGER_BOARDS m
+            WHERE ROWNUM <= (#{pageNum}*#{rowAmountPerPage})
+    )
+    WHERE rn >= ((#{pageNum}*#{rowAmountPerPage})-(#{rowAmountPerPage}-1))
+    ]]>
+  </select>
+
+  <!-- 페이징 처리를 위한 게시글 총수 -->
+  <select id="selectRowTotal" resultType="Long">
+    SELECT COUNT(*) AS rowTotal
+    FROM tlbook.TBL_MANAGER_BOARDS
+  </select>
+
+  <!-- 공지사항 조회 -->
+  <select id="selectManagerBoard" resultType="com.booknow.travelapp.common.domain.AdminManagerBoardVO">
+    SELECT TMBNO, TMBTITLE, TMBCONTENT, TMBWRITER, 
+    TMBTYPE, TMBREGDATE, TMBMODDATE, TMBDELFLAG
+    FROM tlbook.TBL_MANAGER_BOARDS
+    WHERE TMBNO = #{tmBno}
+  </select>
+
+  <!-- 공지사항 수정 -->
+  <update id="updateManagerBoard">
+    UPDATE tlbook.TBL_MANAGER_BOARDS
+    SET TMBTITLE = #{tmBtitle},
+        TMBCONTENT = #{tmBcontent},
+        TMBMODDATE = DEFAULT,
+        TMBTYPE = #{tmBtype}
+    WHERE TMBNO = #{tmBno}
+  </update>
+
+  <!-- 공지사항 삭제 요청 -->
+  <update id="updateManagerBoardDelFlag">
+    UPDATE tlbook.TBL_MANAGER_BOARDS
+    SET TMBDELFLAG = 1
+    WHERE TMBNO = #{tmBno}
+  </update>
+
+  <!-- 삭제 요청 받은 공지사항 삭제 -->
+  <delete id="deleteManagerBoardDelFlagAll">
+    DELETE FROM tlbook.TBL_MANAGER_BOARDS
+    WHERE TMBDELFLAG = 1
+  </delete>
+
+  <!-- 공지사항 등록 -->
+  <insert id="insertManagerBoard">
+    <selectKey keyProperty="tmBno" order="BEFORE" resultType="Long">
+			SELECT tlbook.SEQ_MANAGERBNO.nextval FROM dual
+		</selectKey>
+    INSERT INTO tlbook.TBL_MANAGER_BOARDS
+    VALUES(
+        #{tmBno},
+        #{tmBtitle},
+        #{tmBcontent},
+        #{tmBwriter},
+        #{tmBtype},
+        DEFAULT,
+        DEFAULT,
+        DEFAULT
+    )
+  </insert>
+<!-- ############관리자 공지사항 -->
+
+</mapper>

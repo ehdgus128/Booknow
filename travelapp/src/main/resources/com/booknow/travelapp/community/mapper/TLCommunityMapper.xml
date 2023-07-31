@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<!-- 2307041008  작업자: 정지은 커뮤니티 매퍼 -->
+<mapper namespace="com.booknow.travelapp.community.mapper.TLCommunityMapper">
+
+	<!-- 카테고리 화면  -->
+	<select id="selectCateList" resultType="com.booknow.travelapp.community.domain.TLCommunityCateVO">
+			SELECT tvcCatId,tvcCatName 
+			FROM TLBOOK.tbl_travel_comm_cats	
+	</select>
+	
+	<!-- 게시판 리스트 화면 (삭제요청된 것 안보임 ) -->
+	<select id="selectCommuList" resultType="com.booknow.travelapp.community.domain.TLCommunityBoardVO">	
+		SELECT tvcBno, tvcBtitle,tvcBcontent,tvcBwriter,tvcBregDate,tvcBmodDate,tvcBviewsCnt,tvcBreplyCnt,tvcBdelFlag,tvcCatId
+		  FROM TLBOOK.TBL_TRAVEL_COMM_BOARDS
+		  WHERE tvcBdelFlag = 0
+		  <if test="tvcCatId != null and tvcCatId != '' ">
+		  	<trim prefix="and">
+		  		tvcCatId = #{tvcCatId}
+		  	</trim>
+		  </if> 
+		  order by tvcBno desc
+	</select>
+
+	<!-- 게시판 총수 -->
+	<select id="selectRowTotal" resultType="Integer" parameterType="Long">
+		SELECT count(*) 
+		FROM  tlbook.TBL_TRAVEL_COMM_BOARDS	
+		WHERE tvcCatId = #{tvcCatId}				
+	</select>
+	
+	<!-- 글 등록 -->
+	<insert id="insertBoard">	 
+		<selectKey keyProperty="tvcBno" order="BEFORE" resultType="long">
+			SELECT TLBOOK.seq_tvcbno.nextval from dual
+		</selectKey>
+	   		INSERT INTO 
+	   		tlbook.TBL_TRAVEL_COMM_BOARDS
+			VALUES(#{tvcBno},#{tvcBtitle},#{tvcBcontent},#{tvcBwriter},default,default,default,default,default,#{tvcCatId},#{boardFile,jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 글 수정 -->
+	<update id="updateCommuBoard" parameterType="com.booknow.travelapp.community.domain.TLCommunityBoardVO">
+		UPDATE tlbook.TBL_TRAVEL_COMM_BOARDS
+		   SET tvcBtitle = #{tvcBtitle},
+	   		   tvcBcontent = #{tvcBcontent},
+	   		   boardFile  = #{boardFile,jdbcType=VARCHAR},
+	   		   tvcBmodDate = default
+		 WHERE tvcBno = #{tvcBno}
+		  AND tvcCatId = #{tvcCatId}
+	</update>
+	
+	<!-- 게시판 상세페이지 화면 -->
+	<select id="selectCommuDetail" resultType="com.booknow.travelapp.community.domain.TLCommunityBoardVO">	
+		SELECT tvcBno, tvcBtitle,tvcBcontent,tvcBwriter,tvcBregDate,tvcBmodDate,tvcBviewsCnt,tvcBreplyCnt,tvcBdelFlag,tvcCatId,boardFile
+		FROM TLBOOK.TBL_TRAVEL_COMM_BOARDS
+		WHERE tvcBno = #{tvcBno}
+		  AND tvcCatId = #{tvcCatId}
+	</select>
+	
+	<!-- 게시글 삭제요청 처리  -->
+	<update id="updateBdelFlag">	
+		UPDATE  tlbook.TBL_TRAVEL_COMM_BOARDS
+		   SET tvcBdelFlag = 1
+		 WHERE tvcBno = #{tvcBno}
+	</update>
+	
+	<!-- 조회수 증가 처리  -->
+	<update id="updateViewsCnt">
+		UPDATE tlbook.TBL_TRAVEL_COMM_BOARDS   
+	      SET tvcbviewscnt = tvcbviewscnt + 1
+	      WHERE tvcBno = #{tvcBno}
+	</update>
+
+
+</mapper>

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	 
+	<mapper namespace="com.booknow.travelapp.airways.mapper.AirLineRevMapper">
+	
+	
+		<!-- 페이징 처리  -->
+	 <select id="selectAirRevList" resultType="com.booknow.travelapp.airways.domain.AirLineRevVO"
+		    parameterType="com.booknow.travelapp.airways.common.paging.domain.AirlineRevPagingDTO">
+		    <![CDATA[
+		   
+		        SELECT 
+		            airlineRevno,
+		            userId,
+		            airlineId,
+		            airlineStar,
+		            airlineLike,
+		            airlineRevTitle,
+		            airlineRevContents,
+		            airlineRevRegDate,
+		            airlineRevDelFlag
+		        FROM (
+		            SELECT /*+ INDEX_DESC(a PK_NO_AIRLINEREV) */ rownum rn, a.*  
+		            FROM tlbook.TBL_AIRLINE_REV a  
+		            WHERE airlineId = #{airlineId} ]]>
+		            <trim prefix="AND (" suffix=")">
+		                <foreach item='scope' collection="scopeArray">
+		                    <choose>
+		                        <when test="scope == 'TC'.toString()"> airlineRevTitle LIKE '%'||#{keyword}||'%'
+		                                                                OR airlineRevContents LIKE '%'||#{keyword}||'%'</when>
+		                    </choose>
+		                </foreach>
+		            </trim> 
+		        <![CDATA[ 		  
+			      AND	rownum <= ( #{pageNum} * #{rowAmountPerPage} ) )
+					WHERE rn >= ((#{pageNum} * #{rowAmountPerPage}) - (#{rowAmountPerPage} - 1))
+				]]>
+		</select>
+	
+	
+	
+		 <!--  페이징 토탈  -->
+		<select id="selectRowTotal" resultType="long"
+		        parameterType="com.booknow.travelapp.airways.common.paging.domain.AirlineRevPagingDTO">
+		    SELECT COUNT(*) AS rowTotal
+		    FROM tlbook.TBL_AIRLINE_REV WHERE airlineId=#{airlineId}
+		  		<where>
+		       <trim prefix="AND(" suffix=")">
+		                <foreach item='scope' collection="scopeArray">
+		                    <choose>
+		                        <when test="scope == 'TC'.toString()"> airlineRevTitle LIKE '%'||#{keyword}||'%'
+		                            									OR airlineRevContents LIKE '%'||#{keyword}||'%'</when>
+		                    </choose>
+		                </foreach>
+		            </trim> 
+		      	</where>
+		</select> 
+	
+	  
+	 
+	<!--  페이징 처리  -->
+	<!-- <select id="selectAirRevList" resultType="com.booknow.travelapp.airways.domain.AirLineRevVO"
+	    parameterType="com.booknow.travelapp.airways.common.paging.domain.AirlineRevPagingDTO">
+	    <![CDATA[
+	    SELECT *
+	    FROM (
+	        SELECT 
+	            airlineRevno,
+	            userId,
+	            airlineId,
+	            airlineStar,
+	            airlineLike,
+	            airlineRevTitle,
+	            airlineRevContents,
+	            airlineRevRegDate,
+	            airlineRevDelFlag
+	      FROM (SELECT /*+ INDEX_DESC(a PK_NO_AIRLINEREV) */ rownum rn, a.*  
+		      		  FROM tlbook.TBL_AIRLINE_REV a  
+		      		  WHERE airlineId = #{airlineId}  ]]>
+	            
+	     <trim prefix="(" suffix=") AND" prefixOverrides="OR">
+			<foreach item='scope' collection="scopeArray">
+				<trim prefix="OR">
+					<choose>
+		                <when test="scope == 'T'.toString()">airlineRevTitle LIKE '%'||#{keyword}||'%'</when>
+		                <when test="scope == 'C'.toString()">airlineRevContents LIKE '%'||#{keyword}||'%'</when>
+		            </choose>
+	            </trim> 
+	        </foreach>
+	    </trim> 
+	     <![CDATA[ 		  
+		      	rownum <= ( #{pageNum} * #{rowAmountPerPage} ) )
+				WHERE rn >= ((#{pageNum} * #{rowAmountPerPage}) - (#{rowAmountPerPage} - 1)))
+			]]>
+		</select>  
+	
+	
+	  페이징 토탈 
+	<select id="selectRowTotal" resultType="long"
+	        parameterType="com.booknow.travelapp.airways.common.paging.domain.AirlineRevPagingDTO">
+	    SELECT COUNT(*) AS rowTotal
+	    FROM tlbook.TBL_AIRLINE_REV WHERE airlineId = #{airlineId}  
+	        <trim prefix="(" suffix=")" prefixOverrides="OR">
+	            <foreach item='scope' collection="scopeArray">
+	                <trim prefix="OR">
+	                    <choose>
+	                        <when test="scope == 'T'.toString()">airLineRevTitle LIKE '%'||#{keyword}||'%'</when>
+	                        <when test="scope == 'C'.toString()">airLineRevContents LIKE '%'||#{keyword}||'%'</when>
+	                    </choose>
+	                </trim>
+	            </foreach>
+	        </trim>
+	</select>
+	  -->
+	  
+	 
+	
+	
+	<!--게시물 등록  -->
+	<insert id="insertAirlineRev" parameterType="com.booknow.travelapp.airways.domain.AirLineRevVO">
+	    <selectKey keyProperty="airlineRevno" order="BEFORE" resultType="long">
+	        SELECT tlbook.seq_airline_rev.NEXTVAL FROM dual
+	    </selectKey>
+	    
+	    INSERT INTO tlbook.TBL_AIRLINE_REV
+	    VALUES(#{airlineRevno}, #{userId}, #{airlineId}, #{airlineStar}, DEFAULT, #{airlineRevTitle},
+	    #{airlineRevContents}, DEFAULT, DEFAULT)
+	</insert>
+	
+	<!-- 리뷰 게시글 삭제 -->
+	<delete id="deleteAirLineRev" parameterType="long">
+	    DELETE FROM tlbook.TBL_AIRLINE_REV
+	    WHERE airlineRevno = #{airlineRevno}
+	</delete>
+	
+	<!-- 리뷰 게시글 신고 -->
+	<update id="reportAirLineRev" parameterType="long"> 
+	    UPDATE tlbook.TBL_AIRLINE_REV
+	    SET airlineRevDelFlag = airlineRevDelFlag + 1
+	    WHERE airlineRevno = #{airlineRevno}
+	</update>
+	
+	<!-- 리뷰 게시글 수정 -->
+	<update id="modifyAirLineRev" parameterType="com.booknow.travelapp.airways.domain.AirLineRevVO">
+	    UPDATE tlbook.TBL_AIRLINE_REV
+	    SET 
+	    airlineStar = #{airlineStar},
+	    airlineRevTitle = #{airlineRevTitle},
+	    airlineRevContents = #{airlineRevContents},
+	    airlineId = #{airlineId}
+	    WHERE airlineRevno = #{airlineRevno}
+	</update>
+	<!-- <update id="modifyAirLineRev" parameterType="com.booknow.travelapp.airways.domain.AirLineRevVO">
+	    UPDATE tlbook.TBL_AIRLINE_REV
+	    SET airlineStar = #{airlineStar},
+	    airlineRevTitle = #{airlineRevTitle},
+	    airlineRevContents = #{airlineRevContents}
+	    WHERE airlineRevno = #{airlineRevno}
+	</update> -->
+	
+	<!-- 총 후기 수 -->	
+	<select id="selectAirLineCount" resultType="String">
+	    SELECT COUNT(*) FROM tlbook.TBL_AIRLINE_REV WHERE airlineId = #{airlineId}
+	</select>
+	
+	<!-- 평균 별점 -->
+	<select id="averageStar" parameterType="String" resultType="double">
+	    SELECT COALESCE(
+    CAST(
+        (SELECT SUM(airlineStar) FROM tlbook.TBL_AIRLINE_REV WHERE airlineId = #{airlineId}) /
+        (SELECT COUNT(*) FROM tlbook.TBL_AIRLINE_REV WHERE airlineId = #{airlineId})
+        AS DECIMAL(10, 1)
+		    ),
+		    0.0
+		) AS A
+		FROM dual
+	</select>
+	
+	<!-- 리뷰 추천 +1 -->
+	<update id="updateMyLike" parameterType="long">
+	    UPDATE tlbook.TBL_AIRLINE_REV
+	    SET airlineLike = airlineLike + 1
+	    WHERE airlineRevno = #{airlineRevno}
+	</update>
+	
+	<select id="selectOneRev"  resultType="com.booknow.travelapp.airways.domain.AirLineRevVO">
+	 SELECT 
+	            airLineRevno,
+	            userId,
+	            airlineId,
+	            airLineStar,
+	            airLineLike,
+	            airLineRevTitle,
+	            airLineRevContents,
+	            airLineRevRegDate,
+	            airLineRevDelFlag
+	      FROM tlbook.TBL_AIRLINE_REV
+	 WHERE  airLineRevno  = #{airLineRevno}
+	</select>
+	
+	</mapper>
+

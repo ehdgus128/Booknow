@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<!-- 230712_박효준_항공상품목록-->
+<mapper namespace="com.booknow.travelapp.common.mapper.AdminFlightPurchaseListMapper">
+
+	<!-- 구매한 상품 리스트 -->
+	<select id="selectAirRouteList" 
+			resultType="com.booknow.travelapp.common.domain.AdminFlightPurchaseVO"
+			parameterType="com.booknow.travelapp.common.domain.paging.AmFlightPurchasePagingDTO">
+			
+		<![CDATA[
+		SELECT airRouteno, airLinenm, vihicleId, depairportnm, arrAirportnm, depPlandTime,
+      		   arrPlandTime, economyCharge, eSeatCnt, prestigeCharge, pSeatCnt
+		FROM (SELECT /* + INDEX_DESC (a PK_airRouteno) */ ROWNUM rn, a.* ,b.*
+		      FROM (SELECT *
+		            FROM tbl_air_route
+		            ORDER BY airRouteno DESC)a INNER JOIN tbl_airline b ON a.airLineid = b.airLineid
+		      WHERE ]]>
+		      
+<trim prefix="(" suffix=") AND" prefixOverrides="OR">
+	<foreach item='scope' collection="scopeArray">
+		<trim prefix="OR">
+			<choose>
+				<when test="scope == 'T'.toString()">airLinenm LIKE '%'||#{keyword}||'%'</when>
+			</choose>
+		</trim> 
+	</foreach>
+</trim>	      	
+		<![CDATA[
+		      buyflag = '1' AND ROWNUM <= #{pageNum} * #{rowAmountPerPage} AND depPlandTime > TO_CHAR(SYSDATE, 'yyyy-MM-dd')
+		      order by airRouteno DESC)
+		WHERE rn >= ((#{pageNum} * #{rowAmountPerPage})- (#{rowAmountPerPage}-1))
+		]]>
+		
+	</select>
+	
+	<!-- 구매한 상품 갯수 -->
+	<select id="selectAirRouteListTotal" 
+			resultType="long"
+			parameterType="com.booknow.travelapp.common.domain.paging.AmFlightPurchasePagingDTO">
+        SELECT COUNT(*) AS rowTotal
+		FROM tbl_air_route a INNER JOIN tbl_airline b ON a.airLineid = b.airLineid
+		WHERE 
+		<trim prefix="(" suffix=") AND" prefixOverrides="OR">
+	<foreach item='scope' collection="scopeArray">
+		<trim prefix="OR">
+			<choose>
+				<when test="scope == 'T'.toString()">airLinenm LIKE '%'||#{keyword}||'%'</when>
+			</choose>
+		</trim> 
+	</foreach>
+</trim>	    
+		buyflag = '1'
+	</select>
+	
+	<!-- 항공노선수정 -->
+	<update id="updateAirRoute" parameterType="com.booknow.travelapp.common.domain.AdminFlightPurchaseVO">
+		UPDATE tbl_air_route
+		SET economyCharge = #{economyCharge}, eSeatCnt = #{eSeatCnt},
+			prestigeCharge = #{prestigeCharge},pSeatCnt = #{pSeatCnt},
+			buyflag = '1'
+		WHERE airRouteno = #{airRouteno}
+	</update>
+	
+	<!-- 노선구매수정 -->
+	<update id="updateAirRouteBuy" parameterType="com.booknow.travelapp.common.domain.AdminFlightBuyRouteVO">
+		UPDATE tbl_air_route_buy
+		SET airRouteBuyPrice = #{airRouteBuyPrice} , airTotalSeat = #{airTotalSeat}
+		WHERE airRouteno = #{airRouteno}
+	</update>	
+	
+	<!-- 특정 노선 정보 -->
+	<select id="selectAirRoute" resultType="com.booknow.travelapp.common.domain.AdminFlightPurchaseVO">
+		SELECT airRouteno, airLinenm, vihicleId, depairportnm, arrAirportnm, depPlandTime,
+		       arrPlandTime, economyCharge, eSeatCnt, prestigeCharge, pSeatCnt
+		FROM tbl_air_route a INNER JOIN tbl_airline b ON a.airlineid = b.airlineid
+		WHERE airRouteno = #{airRouteno}
+	</select>	
+	
+	<!-- 항공노선삭제 -->
+	<delete id="deleteAirRoute">
+		DELETE FROM tbl_air_route
+		WHERE airRouteno = #{airRouteno}
+	</delete>
+	
+	<!-- 노선구매삭제 -->
+	<delete id="deleteAirRouteBuy">
+		DELETE FROM tbl_air_route_buy
+		WHERE airRouteno = #{airRouteno}
+	</delete>
+	
+	
+
+
+
+
+</mapper>

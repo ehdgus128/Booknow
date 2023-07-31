@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.booknow.travelapp.mapper.FAQCategoryMapper">
+
+<!-- 0705_창훈 작성 -->
+
+<!-- 카테고리 목록 조회 -->
+	<select id="selectCategoryList" resultType="com.booknow.travelapp.domain.FAQCategoryVO">
+		select cateId , cateName, pCateId , level as lvl
+		from TLBOOK.TBL_FAQ_Category
+		start with cateId = #{cateId}
+		connect by   pCateId = prior cateId
+		order siblings by cateId desc
+	</select>
+	
+
+<!-- 특정 카테고리 글목록 -->
+	<select id="selectCategoryFaqBoardList" resultType="com.booknow.travelapp.domain.FaqBoardsVO">
+		select faqNo,faqQuestion ,faqAnswer,cateId,faqLike
+		from tlbook.tbl_faq_boards
+		where cateId = #{cateId}
+	</select>
+	
+<!-- 특정 게시글 조회 -->
+	<select id="getFaqQuestion" resultType="com.booknow.travelapp.domain.FaqBoardsVO">
+		select faqNo,faqQuestion ,faqAnswer,cateId,faqLike
+		from tlbook.tbl_faq_boards
+		where faqNo = #{faqNo}
+	</select>
+
+
+<!--카테고리 등록 -->
+	<insert id="insertFAQCategory">
+		INSERT INTO TLBOOK.TBL_FAQ_Category (cateId,cateName,pCateId)
+		values(#{cateId},#{cateName},#{pCateId})
+	</insert>
+
+	
+	<!-- 카테고리 수정 -->
+	<update id="updateCategory">
+		UPDATE TLBOOK.TBL_FAQ_Category 
+		SET cateName = #{cateName},pCateId=#{pCateId}
+		WHERE cateId = #{cateId} 
+	</update>
+
+	<!-- 특정 카테고리 삭제 -->
+	<delete id="deleteCategory">
+		DELETE FROM TLBOOK.TBL_FAQ_Category WHERE cateName = #{cateName}
+	</delete>
+
+
+</mapper>

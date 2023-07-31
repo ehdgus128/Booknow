@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<!-- 2307041008  작업자: 정지은 커뮤니티 댓글 매퍼 -->
+<mapper namespace="com.booknow.travelapp.community.mapper.TLCommunityReplyMapper">
+
+	<!-- 2307041008  작업자: 정지은 커뮤니티 목록 조회 -->
+	<select id="selectReplyList" resultType="com.booknow.travelapp.community.domain.TLCommunityReplyVO">
+		SELECT tvcRno,tvcBno,tvcRwriter,tvcRcontent,tvcRregDate,tvcRmodDate,tvcRdelflag,tvcPrno,LEVEL lvl
+		  FROM (SELECT /* INDEX_ASC (a IDX_TCREPLYS_TVCBNO_TVCRNO) */ * 
+      			  FROM TLBOOK.TBL_TRAVEL_COMM_REPLYS
+     			 WHERE tvcBno= #{tvcBno} 
+     			 AND  tvcRdelflag = 0
+     			 ) a
+     	 START WITH tvcPrno IS NULL
+      	CONNECT BY PRIOR tvcRno = tvcPrno   	
+	</select>
+	
+	<!-- 댓글 총수 -->
+	<select id="selectRowTotal" resultType="Integer">
+		SELECT count(*) FROM TLBOOK.TBL_TRAVEL_COMM_REPLYS 
+		WHERE tvcBno = #{tvcBno} 
+		AND TVCRDELFLAG = 0
+	</select>
+	
+	<!-- 댓글등록 -->
+	<insert id="insertReplyForBoard">
+		<selectKey keyProperty="tvcRno" order="BEFORE" resultType="Long">
+			SELECT TLBOOK.tcvrno_seq.NEXTVAL FROM dual
+		</selectKey>
+		INSERT INTO TLBOOK.TBL_TRAVEL_COMM_REPLYS
+			VALUES (#{tvcRno},#{tvcBno},#{tvcRwriter},#{tvcRcontent},default,default,0,default)
+	</insert>
+	
+	<!-- 답글등록 -->
+	<insert id="commentForReply" parameterType="com.booknow.travelapp.community.domain.TLCommunityReplyVO">
+		<selectKey keyProperty="tvcRno" order="BEFORE" resultType="Long">
+		 	 SELECT TLBOOK.tcvrno_seq.NEXTVAL FROM dual
+		</selectKey>
+		   	INSERT INTO TLBOOK.TBL_TRAVEL_COMM_REPLYS
+			VALUES (#{tvcRno},#{tvcBno},#{tvcRwriter},#{tvcRcontent},default,default,0,#{tvcPrno})
+	</insert>
+	
+	<!-- 특정 게시물의 댓글/답글 조회 -->
+	<select id="selectMyReply" resultType="com.booknow.travelapp.community.domain.TLCommunityReplyVO">
+		SELECT *
+ 		  FROM TLBOOK.TBL_TRAVEL_COMM_REPLYS
+         WHERE tvcBno = #{tvcBno} AND tvcrno = #{tvcrno}
+	</select>
+	
+	<!-- 댓글수정 -->
+	<update id="updateReply" parameterType="com.booknow.travelapp.community.domain.TLCommunityReplyVO">
+		 UPDATE TLBOOK.TBL_TRAVEL_COMM_REPLYS
+  		    SET  tvcRcontent = #{tvcRcontent},
+                 tvcRmodDate = default
+           WHERE  tvcRno = #{tvcRno}
+ 	</update>
+ 	
+ 	
+ 	<!-- 댓글삭제 요청-->
+	<update id="updateRdelFlag" parameterType="Long">
+		UPDATE TLBOOK.TBL_TRAVEL_COMM_REPLYS
+    	   SET  tvcRdelflag = 1
+         WHERE  tvcRno = #{tvcRno} 
+	</update>
+	
+	
+	
+</mapper>
+
+
+

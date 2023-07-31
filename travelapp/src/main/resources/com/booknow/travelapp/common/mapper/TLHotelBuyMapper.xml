@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+
+<mapper namespace="com.booknow.travelapp.common.mapper.TLHotelBuyMapper">
+
+			<!-- 호텔파트 -->
+<!-- insert문  -->
+	<!-- 사업자번호 중복체크-->
+	<select id="checkBusRegNumExists" resultType="String">
+			SELECT (case when count(*) = 1 THEN 'unusable' 
+           		    else 'usable' end) 
+           	        as result
+			FROM tlbook.tbl_business_users
+			WHERE busRegNum = #{busRegNum}
+	</select>
+
+	<!-- 사업자 등록  -->
+	<insert id="insertBusinessUser">
+		 <selectKey keyProperty="busId" order="BEFORE" resultType="Long">
+			SELECT tlbook.seq_bus.nextval FROM dual
+		</selectKey>
+		 	INSERT INTO tlbook.tbl_business_users (busId, busName, busRegNum, busCertified)
+    		VALUES (#{busId}, #{busName}, #{busRegNum}, DEFAULT)
+	</insert> 	
+	<!-- 호텔 등록 -->
+	 <insert id="insertHotel" parameterType="com.booknow.travelapp.common.domain.TLHotelVO">
+		<selectKey resultType="Long" keyProperty="htNo" order="BEFORE">
+			SELECT tlbook.seq_hotels.nextval FROM dual
+		</selectKey>
+			INSERT INTO  tlbook.tbl_hotels
+	   		VALUES(#{htNo},#{htName},#{htRank},#{htAreaCode},#{htType},
+	   			   #{htPhone},#{htEmail},(SELECT busId FROM tlbook.tbl_business_users WHERE busRegNum = #{busRegNum}),TO_TIMESTAMP(#{htStartDate}, 'YYYY-MM-DD'),TO_TIMESTAMP(#{htEndDate}, 'YYYY-MM-DD'),DEFAULT,#{htAddress})
+	</insert>
+	<!-- 거래내역 등록  -->
+	 <insert id="insertBuyTran" parameterType="com.booknow.travelapp.common.domain.TLHotelBuyTranVO">
+		<selectKey resultType="Long" keyProperty="htBuyTranId" order="BEFORE">
+			SELECT tlbook.seq_buytran.nextval FROM dual
+		</selectKey>
+			INSERT INTO tlbook.tbl_ht_buy_transactions
+	   		VALUES(#{htBuyTranId},default,#{htBuyTranType},#{htBuyCost},#{htNo})
+	</insert>	
+
+
+
+<!-- select문 -->	
+
+<!-- 메인화면   -->
+	<!-- 메인화면 호텔정보만 표시-->
+	<select id="selectHotelByName" 
+        resultType="com.booknow.travelapp.common.domain.TLHotelVO">
+      	 SELECT
+	        htNo,
+	        htName,
+	        htRank,
+	        htAreaCode,
+	        htType,
+	        htPhone,
+	        htEmail,
+	        busId,
+	        htStartDate,
+	        htEndDate,
+	        htAddress
+	    FROM tlbook.tbl_hotels
+        ORDER BY htNo desc
+	</select>
+	<!-- 페이징 처리용 호텔 총수  -->
+	<select id="selectHotelTotal" resultType="Integer">
+		SELECT COUNT(*) 
+		  FROM tlbook.tbl_hotels
+	</select>
+		
+<!-- 상세정보 페이지 -->
+	<!-- 사업자 조회  -->
+	<select id="selectBusInfo"
+			resultType="com.booknow.travelapp.common.domain.TLHotelBusinessVO">
+		SELECT busId,busName,busRegNum,busCertified
+		FROM tlbook.tbl_business_users
+		WHERE busId = #{busId}
+	</select>	
+	
+	<!-- 호텔 조회 -->
+	<select id="selectHotelInfo"
+		resultType="com.booknow.travelapp.common.domain.TLHotelVO">
+		SELECT htNo,htName,htRank,htAreaCode,htType,htPhone,htEmail,busId,htStartDate,htEndDate,htAddress
+		FROM tlbook.tbl_hotels
+		WHERE busId = #{busId}
+	</select>
+
+    <!-- 상세거래내역 조회  -->
+    <select id="selectTranInfo" 
+  		  resultType="com.booknow.travelapp.common.domain.TLHotelBuyTranVO">
+    	SELECT htBuyTranId,htBuyTranDate,htBuyTranType,htBuyCost 
+    	FROM tlbook.tbl_ht_buy_transactions
+    	WHERE htNo = #{htNo}
+    </select>
+    
+<!-- update문 -->
+		<!-- 사업자 수정  -->
+	<update id="updateBusInfo"
+			parameterType="com.booknow.travelapp.common.domain.TLHotelBusinessVO">
+			UPDATE tlbook.tbl_business_users
+			   SET  busName = #{busName},
+			        busRegNum = #{busRegNum},
+			        busCertified = #{busCertified}
+	          WHERE busId = #{busId}
+	</update>	
+	
+	<!-- 호텔 수정 -->
+	<update id="updateHotelInfo"
+		parameterType="com.booknow.travelapp.common.domain.TLHotelVO">
+			UPDATE tlbook.tbl_hotels
+			   SET htName = #{htName},
+			       htRank = #{htRank},
+			       htAreaCode = #{htAreaCode},
+				   htType = #{htType},
+				   htPhone = #{htPhone},
+				   htEmail = #{htEmail},
+				   htAddress = #{htAddress}
+		    WHERE htNo = #{htNo}
+	</update>
+
+    <!-- 상세거래내역 수정  -->
+    <update id="updateTranInfo" 
+  		  parameterType="com.booknow.travelapp.common.domain.TLHotelBuyTranVO">
+  		  UPDATE tlbook.tbl_ht_buy_transactions 
+  		     SET htBuyTranType = #{htBuyTranType},
+  		     		htBuyCost  = #{htBuyCost}
+    	   WHERE htBuyTranId = #{htBuyTranId}
+    </update>
+ 
+ <!-- delete문  --> 
+ 
+ <!-- delete cascade로 연결되있어서 사업자만 삭제하면 다 삭제됨  -->  
+	<delete id="deleteBusUser">
+		DELETE FROM tlbook.tbl_business_users
+		WHERE busId = #{busId}
+	</delete> 
+	
+	
+<!-- 방파트 -->											
+<!-- 방파트 -->												   
+<!-- 방파트 -->											
+
+
+<!-- select문  -->
+	<!-- 특정 호텔의 방 조회 sql --> 
+	<select id="selectRoomList"
+			resultType="com.booknow.travelapp.common.domain.TLHotelRoomVO">
+		SELECT htRooNo,htRooType,htRooPrice,htNo,htRooName
+		FROM tlbook.tbl_ht_rooms 
+		WHERE htNo = #{htNo}
+		ORDER BY htRooNo desc
+	</select>
+	
+	<!-- 페이징처리를 위한 방 총수 -->
+	<select id="selectRoomTotal" resultType="Integer">
+		SELECT count(*)
+		FROM tlbook.tbl_ht_rooms
+		WHERE htNo = #{htNo}
+	</select>
+	
+	<!-- 하나의 방 조회 -->
+	<select id="selectRoomByRooNo">
+		SELECT htRooNo,htRooType,htRooPrice,htNo,htRooName
+		FROM tlbook.tbl_ht_rooms 
+		WHERE htRooNo = #{htRooNo}
+	</select>
+		
+<!-- 방구매내역 -->
+<!-- 방구매내역 -->
+<!-- 방구매내역 -->
+
+	<!-- 방구매내역 -->
+	<select id="selectRoomSellDate"
+			resultType="com.booknow.travelapp.common.domain.TLHotelSellDateVO">
+		SELECT htRooSellDateId,htRooSellPrice,htRooSellDate,htRooNo,htResNo
+		FROM tlbook.TBL_HT_ROOM_SELL_DATE
+		WHERE htRooNo = #{htRooNo}
+	</select>
+	
+	<!-- 페이징처리를 위한 방구매내역 총수  -->
+	<select id="selectSellDateTotal"
+			resultType="Integer">
+		SELECT count(*) 
+		FROM tlbook.TBL_HT_ROOM_SELL_DATE
+		WHERE htRooNo = #{htRooNo}
+	</select>
+	
+	
+	
+<!-- insert문 -->
+
+	<!-- 방등록 sql -->
+	<insert id="insertRoom"
+				parameterType="com.booknow.travelapp.common.domain.TLHotelRoomVO">
+		<selectKey resultType="Long" keyProperty="htRooNo" order="BEFORE">
+			SELECT seq_rooms.nextval FROM dual
+		</selectKey>
+		INSERT INTO tlbook.tbl_ht_rooms 
+		VALUES (#{htRooNo},#{htRooType},#{htRooPrice},#{htNo},#{htRooName})			
+	</insert>
+	
+	<!-- 방구매내역 sql -->
+	<insert id="insertSellDate"
+			parameterType="com.booknow.travelapp.common.domain.TLHotelSellDateVO">
+		<selectKey resultType="Long" keyProperty="htRooSellDateId" order="BEFORE">
+			SELECT seq_htselldate.nextval FROM dual
+		</selectKey>
+			INSERT INTO tlbook.TBL_HT_ROOM_SELL_DATE
+			VALUES (#{htRooSellDateId},#{htRooSellPrice},TO_TIMESTAMP(#{htRooSellDate},'YYYY-MM-DD'),#{htRooNo},NULL)	
+	</insert>
+	
+	<!-- 맵핑테이블 (호텔거래내역 테이블이랑, 방구매내역테이블 맵핑) -->
+	<insert id="insertHtBuyMapping" 
+			parameterType="com.booknow.travelapp.common.domain.TLhtBuyMappingVO">
+		  INSERT INTO tlbook.tbl_ht_buy_mapping
+   	      VALUES (#{htBuyTranId}, #{htRooBuyDateId})
+	</insert>
+	
+		
+	<!-- delete -->
+	<!-- 객실삭제 (방관련 데이터 모두 삭제됨)-->
+	<delete id="deleteAdRoom">
+		DELETE FROM tlbook.tbl_ht_rooms
+		WHERE htRooNo = #{htRooNo}
+	</delete>
+	
+	
+	
+</mapper>
+
+
+
